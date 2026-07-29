@@ -1,0 +1,63 @@
+# =============================================================================
+# PayGuard — EditorConfig
+# https://editorconfig.org
+#
+# Covers: Java (Spring Boot), Python (ML pipeline), YAML (k8s / compose / CI),
+#         HCL (Terraform), Avro schemas (JSON), shell scripts, Markdown.
+# =============================================================================
+
+root = true
+
+# ---- Universal defaults -----------------------------------------------------
+[*]
+charset                  = utf-8
+end_of_line              = lf
+insert_final_newline     = true
+trim_trailing_whitespace = true
+
+# ---- Java -------------------------------------------------------------------
+[*.java]
+indent_style = space
+indent_size  = 4
+max_line_length = 120
+
+# ---- Python -----------------------------------------------------------------
+[*.py]
+indent_style    = space
+indent_size     = 4
+max_line_length = 120
+
+# ---- YAML (Spring config, docker-compose, k8s manifests, GitHub Actions) ---
+[*.{yml,yaml}]
+indent_style = space
+indent_size  = 2
+
+# ---- HCL / Terraform --------------------------------------------------------
+[*.{tf,tfvars}]
+indent_style = space
+indent_size  = 2
+
+# ---- JSON (Avro schemas, package configs) -----------------------------------
+[*.{json,avsc}]
+indent_style = space
+indent_size  = 2
+
+# ---- XML (Maven pom.xml) ----------------------------------------------------
+[*.xml]
+indent_style    = space
+indent_size     = 4
+max_line_length = 160
+
+# ---- Shell scripts ----------------------------------------------------------
+[*.sh]
+indent_style = space
+indent_size  = 2
+
+# ---- Markdown ---------------------------------------------------------------
+[*.md]
+trim_trailing_whitespace = false   # trailing spaces = intentional line break
+max_line_length          = off
+
+# ---- Makefiles (tabs are syntactically required) ----------------------------
+[Makefile]
+indent_style = tab
