@@ -1,0 +1,261 @@
+# =============================================================================
+# PayGuard — Local Development Stack
+#
+# Starts all infrastructure dependencies so every service can run locally
+# without touching any cloud resource.
+#
+# Usage:
+#   ./scripts/local-dev.sh up      # preferred wrapper
+#   docker compose -f local-dev/docker-compose.yml up -d   # direct
+#
+# Port map:
+#   Postgres — api-gateway         5432
+#   Postgres — user-service        5433
+#   Postgres — payment-service     5434
+#   Postgres — fraud-engine        5435
+#   Postgres — notification        5436
+#   Postgres — reconciliation      5437
+#   Redis                          6379
+#   Kafka (broker)                 9092
+#   Kafka Schema Registry          8081
+#   Kafka UI                       8080  → http://localhost:8080
+# =============================================================================
+
+name: payguard-local
+
+x-postgres-base: &postgres-base
+  image: postgres:16-alpine
+  restart: unless-stopped
+  environment:
+    POSTGRES_USER: payguard
+    POSTGRES_PASSWORD: payguard_secret
+  healthcheck:
+    test: ["CMD-SHELL", "pg_isready -U payguard"]
+    interval: 10s
+    timeout: 5s
+    retries: 5
+
+services:
+
+  # ---------------------------------------------------------------------------
+  # Databases — one per service (database-per-service pattern)
+  # ---------------------------------------------------------------------------
+
+  db-api-gateway:
+    <<: *postgres-base
+    container_name: pg-api-gateway
+    environment:
+      POSTGRES_USER: payguard
+      POSTGRES_PASSWORD: payguard_secret
+      POSTGRES_DB: payguard_gateway
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg-api-gateway:/var/lib/postgresql/data
+
+  db-user-service:
+    <<: *postgres-base
+    container_name: pg-user-service
+    environment:
+      POSTGRES_USER: payguard
+      POSTGRES_PASSWORD: payguard_secret
+      POSTGRES_DB: payguard_users
+    ports:
+      - "5433:5432"
+    volumes:
+      - pg-user-service:/var/lib/postgresql/data
+
+  db-payment-service:
+    <<: *postgres-base
+    container_name: pg-payment-service
+    environment:
+      POSTGRES_USER: payguard
+      POSTGRES_PASSWORD: payguard_secret
+      POSTGRES_DB: payguard_payments
+    ports:
+      - "5434:5432"
+    volumes:
+      - pg-payment-service:/var/lib/postgresql/data
+
+  db-fraud-engine:
+    <<: *postgres-base
+    container_name: pg-fraud-engine
+    environment:
+      POSTGRES_USER: payguard
+      POSTGRES_PASSWORD: payguard_secret
+      POSTGRES_DB: payguard_fraud
+    ports:
+      - "5435:5432"
+    volumes:
+      - pg-fraud-engine:/var/lib/postgresql/data
+
+  db-notification-service:
+    <<: *postgres-base
+    container_name: pg-notification-service
+    environment:
+      POSTGRES_USER: payguard
+      POSTGRES_PASSWORD: payguard_secret
+      POSTGRES_DB: payguard_notifications
+    ports:
+      - "5436:5432"
+    volumes:
+      - pg-notification-service:/var/lib/postgresql/data
+
+  db-reconciliation-service:
+    <<: *postgres-base
+    container_name: pg-reconciliation-service
+    environment:
+      POSTGRES_USER: payguard
+      POSTGRES_PASSWORD: payguard_secret
+      POSTGRES_DB: payguard_reconciliation
+    ports:
+      - "5437:5432"
+    volumes:
+      - pg-reconciliation-service:/var/lib/postgresql/data
+
+  # ---------------------------------------------------------------------------
+  # Redis — feature & score cache for the Fraud Engine
+  # ---------------------------------------------------------------------------
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    restart: unless-stopped
+    command: redis-server --save 60 1 --loglevel warning
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ---------------------------------------------------------------------------
+  # Kafka — event bus (KRaft mode, no Zookeeper required)
+  # ---------------------------------------------------------------------------
+
+  kafka:
+    image: confluentinc/cp-kafka:7.7.1
+    container_name: kafka
+    restart: unless-stopped
+    ports:
+      - "9092:9092"     # external (host) access
+      - "9093:9093"     # internal (container-to-container) access
+    environment:
+      CLUSTER_ID: "payguard-local-cluster-01"
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: "1@kafka:9094"
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9093,CONTROLLER://0.0.0.0:9094,PLAINTEXT_HOST://0.0.0.0:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9093,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_LOG_RETENTION_HOURS: 24
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-broker-api-versions --bootstrap-server localhost:9092 > /dev/null 2>&1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+
+  # ---------------------------------------------------------------------------
+  # Schema Registry — Avro contract enforcement for payguard-event-schemas
+  # ---------------------------------------------------------------------------
+
+  schema-registry:
+    image: confluentinc/cp-schema-registry:7.7.1
+    container_name: schema-registry
+    restart: unless-stopped
+    depends_on:
+      kafka:
+        condition: service_healthy
+    ports:
+      - "8081:8081"
+    environment:
+      SCHEMA_REGISTRY_HOST_NAME: schema-registry
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: kafka:9093
+      SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8081
+      SCHEMA_REGISTRY_KAFKASTORE_TOPIC_REPLICATION_FACTOR: 1
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8081/subjects || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 20s
+
+  # ---------------------------------------------------------------------------
+  # Kafka UI — browser-based topic / consumer-group inspector
+  # Open: http://localhost:8080
+  # ---------------------------------------------------------------------------
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
+    restart: unless-stopped
+    depends_on:
+      kafka:
+        condition: service_healthy
+      schema-registry:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: payguard-local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9093
+      KAFKA_CLUSTERS_0_SCHEMAREGISTRY: http://schema-registry:8081
+      DYNAMIC_CONFIG_ENABLED: "true"
+
+  # ---------------------------------------------------------------------------
+  # Kafka topic initialiser — creates all PayGuard topics on first boot
+  # Runs once and exits; will not block other services from starting.
+  # ---------------------------------------------------------------------------
+
+  kafka-init:
+    image: confluentinc/cp-kafka:7.7.1
+    container_name: kafka-init
+    depends_on:
+      kafka:
+        condition: service_healthy
+    entrypoint: ["/bin/bash", "-c"]
+    command: |
+      "
+      echo 'Waiting for Kafka to be ready...'
+      cub kafka-ready -b kafka:9093 1 30
+
+      echo 'Creating PayGuard topics...'
+      kafka-topics --bootstrap-server kafka:9093 --create --if-not-exists --topic payment.created          --partitions 3 --replication-factor 1
+      kafka-topics --bootstrap-server kafka:9093 --create --if-not-exists --topic payment.completed        --partitions 3 --replication-factor 1
+      kafka-topics --bootstrap-server kafka:9093 --create --if-not-exists --topic payment.failed           --partitions 3 --replication-factor 1
+      kafka-topics --bootstrap-server kafka:9093 --create --if-not-exists --topic fraud.alert.high         --partitions 3 --replication-factor 1
+      kafka-topics --bootstrap-server kafka:9093 --create --if-not-exists --topic fraud.alert.medium       --partitions 3 --replication-factor 1
+      kafka-topics --bootstrap-server kafka:9093 --create --if-not-exists --topic reconciliation.completed --partitions 1 --replication-factor 1
+
+      echo 'Topics created:'
+      kafka-topics --bootstrap-server kafka:9093 --list
+      "
+    restart: "no"
+
+# =============================================================================
+# Named volumes — data persists across container restarts; use
+# './scripts/local-dev.sh reset' to wipe everything.
+# =============================================================================
+
+volumes:
+  pg-api-gateway:
+  pg-user-service:
+  pg-payment-service:
+  pg-fraud-engine:
+  pg-notification-service:
+  pg-reconciliation-service:
+  redis-data:
+  kafka-data:
