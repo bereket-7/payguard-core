@@ -1,0 +1,66 @@
+name: Bump submodule
+
+# Manually bump any single submodule to its latest remote main and open a PR.
+on:
+  workflow_dispatch:
+    inputs:
+      submodule:
+        description: 'Submodule name to bump (e.g. payguard-fraud-engine)'
+        required: true
+        type: choice
+        options:
+          - services/payguard-api-gateway
+          - services/payguard-user-service
+          - services/payguard-payment-service
+          - services/payguard-fraud-engine
+          - services/payguard-notification-service
+          - services/payguard-reconciliation-service
+          - services/payguard-fraud-model-training
+          - services/payguard-event-schemas
+          - services/payguard-infrastructure
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout payguard-core
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Bump submodule to latest main
+        id: bump
+        run: |
+          SUBMODULE="${{ github.event.inputs.submodule }}"
+          git submodule update --remote "$SUBMODULE"
+          cd "$SUBMODULE"
+          NEW_SHA=$(git rev-parse --short HEAD)
+          echo "new_sha=$NEW_SHA" >> "$GITHUB_OUTPUT"
+          echo "submodule=$SUBMODULE" >> "$GITHUB_OUTPUT"
+
+      - name: Commit bump
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add "${{ steps.bump.outputs.submodule }}"
+          git commit -m "chore(deps): bump ${{ steps.bump.outputs.submodule }} to ${{ steps.bump.outputs.new_sha }}" || echo "Nothing to bump"
+
+      - name: Open pull request
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: "chore/bump-${{ steps.bump.outputs.submodule }}"
+          title: "chore(deps): bump ${{ steps.bump.outputs.submodule }} → ${{ steps.bump.outputs.new_sha }}"
+          body: |
+            Automated submodule pointer bump triggered by @${{ github.actor }}.
+
+            | Field | Value |
+            |---|---|
+            | Submodule | `${{ steps.bump.outputs.submodule }}` |
+            | New SHA | `${{ steps.bump.outputs.new_sha }}` |
+          labels: "dependencies,automated"
