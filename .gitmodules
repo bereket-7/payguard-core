@@ -1,27 +1,27 @@
-[submodule "payguard-api-gateway"]
-	path = payguard-api-gateway
+[submodule "services/payguard-api-gateway"]
+	path = services/payguard-api-gateway
 	url = git@github.com:bereket-7/payguard-api-gateway.git
-[submodule "payguard-event-schemas"]
-	path = payguard-event-schemas
+[submodule "services/payguard-event-schemas"]
+	path = services/payguard-event-schemas
 	url = git@github.com:bereket-7/payguard-event-schemas.git
-[submodule "payguard-fraud-engine"]
-	path = payguard-fraud-engine
+[submodule "services/payguard-fraud-engine"]
+	path = services/payguard-fraud-engine
 	url = git@github.com:bereket-7/payguard-fraud-engine.git
-[submodule "payguard-fraud-model-training"]
-	path = payguard-fraud-model-training
+[submodule "services/payguard-fraud-model-training"]
+	path = services/payguard-fraud-model-training
 	url = git@github.com:bereket-7/payguard-fraud-model-training.git
-[submodule "payguard-infrastructure"]
-	path = payguard-infrastructure
+[submodule "services/payguard-infrastructure"]
+	path = services/payguard-infrastructure
 	url = git@github.com:bereket-7/payguard-infrastructure.git
-[submodule "payguard-notification-service"]
-	path = payguard-notification-service
+[submodule "services/payguard-notification-service"]
+	path = services/payguard-notification-service
 	url = git@github.com:bereket-7/payguard-notification-service.git
-[submodule "payguard-payment-service"]
-	path = payguard-payment-service
+[submodule "services/payguard-payment-service"]
+	path = services/payguard-payment-service
 	url = git@github.com:bereket-7/payguard-payment-service.git
-[submodule "payguard-reconciliation-service"]
-	path = payguard-reconciliation-service
+[submodule "services/payguard-reconciliation-service"]
+	path = services/payguard-reconciliation-service
 	url = git@github.com:bereket-7/payguard-reconciliation-service.git
-[submodule "payguard-user-service"]
-	path = payguard-user-service
+[submodule "services/payguard-user-service"]
+	path = services/payguard-user-service
 	url = git@github.com:bereket-7/payguard-user-service.git
