@@ -1,0 +1,35 @@
+name: Submodule sync check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  check-submodules:
+    name: Verify submodule pointers are reachable
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout with submodules
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Verify all submodule commits exist on their remote
+        run: |
+          git submodule foreach --recursive '
+            echo "Checking $name @ $(git rev-parse HEAD)"
+            git fetch origin
+            if ! git branch -r --contains HEAD | grep -q origin; then
+              echo "ERROR: $name commit $(git rev-parse HEAD) is not reachable from any remote branch"
+              exit 1
+            fi
+            echo "OK"
+          '
+
+      - name: Print submodule status summary
+        if: always()
+        run: git submodule status --recursive
