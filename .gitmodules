@@ -1,0 +1,27 @@
+[submodule "payguard-api-gateway"]
+	path = payguard-api-gateway
+	url = git@github.com:bereket-7/payguard-api-gateway.git
+[submodule "payguard-event-schemas"]
+	path = payguard-event-schemas
+	url = git@github.com:bereket-7/payguard-event-schemas.git
+[submodule "payguard-fraud-engine"]
+	path = payguard-fraud-engine
+	url = git@github.com:bereket-7/payguard-fraud-engine.git
+[submodule "payguard-fraud-model-training"]
+	path = payguard-fraud-model-training
+	url = git@github.com:bereket-7/payguard-fraud-model-training.git
+[submodule "payguard-infrastructure"]
+	path = payguard-infrastructure
+	url = git@github.com:bereket-7/payguard-infrastructure.git
+[submodule "payguard-notification-service"]
+	path = payguard-notification-service
+	url = git@github.com:bereket-7/payguard-notification-service.git
+[submodule "payguard-payment-service"]
+	path = payguard-payment-service
+	url = git@github.com:bereket-7/payguard-payment-service.git
+[submodule "payguard-reconciliation-service"]
+	path = payguard-reconciliation-service
+	url = git@github.com:bereket-7/payguard-reconciliation-service.git
+[submodule "payguard-user-service"]
+	path = payguard-user-service
+	url = git@github.com:bereket-7/payguard-user-service.git
