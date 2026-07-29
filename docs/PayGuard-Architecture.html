@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PayGuard — Architecture Documentation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0A1120;
+    --bg-2:#080D18;
+    --panel:#111B2E;
+    --panel-2:#16233A;
+    --border:#243149;
+    --border-soft:#1B2740;
+    --text:#E7ECF5;
+    --text-muted:#8FA1C4;
+    --text-faint:#5C6C8C;
+    --accent:#4C8DFF;
+    --accent-soft:#1B2A4A;
+    --approve:#34D399;
+    --review:#F5A524;
+    --block:#F1554C;
+    --font-display:'Space Grotesk',sans-serif;
+    --font-body:'Inter',sans-serif;
+    --font-mono:'JetBrains Mono',monospace;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{scroll-behavior:smooth;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:var(--font-body);
+    line-height:1.6;
+    font-size:15.5px;
+  }
+  ::selection{background:var(--accent); color:#08101F;}
+  a{color:var(--accent); text-decoration:none;}
+  h1,h2,h3,h4{font-family:var(--font-display); font-weight:600; letter-spacing:-0.01em;}
+  section{scroll-margin-top:76px;}
+  .wrap{max-width:1180px; margin:0 auto; padding:0 32px;}
+  code, .mono{font-family:var(--font-mono);}
+
+  /* ---------- NAV ---------- */
+  header.topnav{
+    position:sticky; top:0; z-index:100;
+    background:rgba(8,13,24,0.88);
+    backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--border-soft);
+  }
+  .topnav-inner{
+    max-width:1180px; margin:0 auto; padding:0 32px;
+    height:60px; display:flex; align-items:center; justify-content:space-between;
+    gap:24px;
+  }
+  .brand{display:flex; align-items:center; gap:10px; font-family:var(--font-display); font-weight:700; font-size:17px;}
+  .brand .mark{
+    width:20px; height:20px; border-radius:5px;
+    background:linear-gradient(135deg, var(--accent), #7C5CFF);
+    display:inline-block;
+    box-shadow:0 0 14px rgba(76,141,255,0.55);
+  }
+  nav.links{display:flex; gap:2px; flex-wrap:wrap;}
+  nav.links a{
+    font-size:13px; color:var(--text-muted); padding:8px 12px; border-radius:6px;
+    transition:color .15s, background .15s;
+    white-space:nowrap;
+  }
+  nav.links a:hover{color:var(--text); background:var(--panel-2);}
+  nav.links a.active{color:var(--text); background:var(--accent-soft);}
+  .status-pill{
+    display:flex; align-items:center; gap:7px; font-family:var(--font-mono);
+    font-size:11px; color:var(--approve); padding:6px 10px; border:1px solid var(--border);
+    border-radius:20px; white-space:nowrap; flex-shrink:0;
+  }
+  .status-dot{width:7px; height:7px; border-radius:50%; background:var(--approve); box-shadow:0 0 8px var(--approve); animation:pulse 2s infinite;}
+  @keyframes pulse{0%,100%{opacity:1;} 50%{opacity:.35;}}
+
+  /* ---------- HERO ---------- */
+  .hero{padding:76px 0 40px; position:relative; overflow:hidden;}
+  .hero::before{
+    content:''; position:absolute; inset:0;
+    background:
+      radial-gradient(ellipse 800px 400px at 15% -10%, rgba(76,141,255,0.16), transparent 60%),
+      radial-gradient(ellipse 600px 400px at 90% 0%, rgba(124,92,255,0.12), transparent 60%);
+    pointer-events:none;
+  }
+  .eyebrow{
+    font-family:var(--font-mono); font-size:12px; color:var(--accent);
+    letter-spacing:.12em; text-transform:uppercase; margin-bottom:18px;
+    display:flex; align-items:center; gap:10px;
+  }
+  .eyebrow::before{content:''; width:22px; height:1px; background:var(--accent);}
+  .hero h1{font-size:52px; line-height:1.05; max-width:820px; margin-bottom:20px;}
+  .hero h1 span{color:var(--accent);}
+  .hero p.lede{font-size:17px; color:var(--text-muted); max-width:640px; margin-bottom:36px;}
+  .hero-grid{display:grid; grid-template-columns:1.1fr 1fr; gap:28px; align-items:start; margin-top:8px;}
+  @media(max-width:900px){.hero-grid{grid-template-columns:1fr;} .hero h1{font-size:36px;}}
+
+  .principle-list{display:flex; flex-direction:column; gap:14px;}
+  .principle{
+    border:1px solid var(--border); background:var(--panel); border-radius:10px; padding:16px 18px;
+  }
+  .principle .k{font-family:var(--font-mono); font-size:11px; color:var(--accent); text-transform:uppercase; letter-spacing:.08em; margin-bottom:6px;}
+  .principle p{font-size:13.5px; color:var(--text-muted);}
+
+  /* ---------- TICKER (signature element) ---------- */
+  .ticker-panel{
+    border:1px solid var(--border); border-radius:12px; background:var(--panel);
+    overflow:hidden;
+  }
+  .ticker-head{
+    display:flex; justify-content:space-between; align-items:center;
+    padding:12px 16px; border-bottom:1px solid var(--border-soft);
+    font-family:var(--font-mono); font-size:11px; color:var(--text-faint); text-transform:uppercase; letter-spacing:.08em;
+  }
+  .ticker-head .live{color:var(--block); display:flex; align-items:center; gap:6px;}
+  .ticker-head .live .dot{width:6px;height:6px;border-radius:50%;background:var(--block); animation:pulse 1.4s infinite;}
+  .ticker-body{height:300px; overflow:hidden; position:relative; padding:6px 0;}
+  .ticker-row{
+    display:grid; grid-template-columns:74px 1fr 66px 78px; gap:10px; align-items:center;
+    padding:9px 16px; font-family:var(--font-mono); font-size:12px;
+    border-bottom:1px solid var(--border-soft);
+    animation:slideIn .4s ease;
+  }
+  @keyframes slideIn{from{opacity:0; transform:translateY(-8px);} to{opacity:1; transform:translateY(0);}}
+  .ticker-row .id{color:var(--text-faint);}
+  .ticker-row .merchant{color:var(--text-muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .ticker-row .score{color:var(--text);}
+  .badge{
+    font-size:10px; padding:3px 8px; border-radius:20px; text-align:center; font-weight:600;
+    letter-spacing:.03em; text-transform:uppercase;
+  }
+  .badge.approve{background:rgba(52,211,153,0.14); color:var(--approve);}
+  .badge.review{background:rgba(245,165,36,0.14); color:var(--review);}
+  .badge.block{background:rgba(241,85,76,0.14); color:var(--block);}
+
+  /* ---------- SECTION SHELL ---------- */
+  .section{padding:88px 0;}
+  .section-head{margin-bottom:40px; max-width:680px;}
+  .section-head .tag{font-family:var(--font-mono); font-size:11.5px; color:var(--accent); text-transform:uppercase; letter-spacing:.1em; margin-bottom:10px;}
+  .section-head h2{font-size:32px; margin-bottom:10px;}
+  .section-head p{color:var(--text-muted); font-size:15px;}
+  .divider{height:1px; background:linear-gradient(90deg, var(--border), transparent); margin:0;}
+
+  /* corner-bracket panel, used sparingly for major diagram panels */
+  .console-panel{
+    position:relative; border:1px solid var(--border); border-radius:4px; background:var(--panel);
+    padding:28px;
+  }
+  .console-panel::before, .console-panel::after{
+    content:''; position:absolute; width:14px; height:14px; border-color:var(--accent); opacity:.7;
+  }
+  .console-panel::before{top:-1px; left:-1px; border-top:2px solid; border-left:2px solid;}
+  .console-panel::after{bottom:-1px; right:-1px; border-bottom:2px solid; border-right:2px solid;}
+  .console-label{
+    font-family:var(--font-mono); font-size:10.5px; color:var(--text-faint); text-transform:uppercase;
+    letter-spacing:.1em; margin-bottom:16px;
+  }
+
+  /* ---------- ARCHITECTURE DIAGRAM ---------- */
+  .arch-layout{display:grid; grid-template-columns:1.6fr 1fr; gap:20px;}
+  @media(max-width:900px){.arch-layout{grid-template-columns:1fr;}}
+  svg.topo{width:100%; height:auto; display:block;}
+  .node-box{cursor:pointer; transition:filter .15s;}
+  .node-box rect{fill:var(--panel-2); stroke:var(--border); stroke-width:1;}
+  .node-box text{fill:var(--text); font-family:var(--font-body); font-size:12.5px;}
+  .node-box .sub{fill:var(--text-faint); font-family:var(--font-mono); font-size:10px;}
+  .node-box:hover rect{stroke:var(--accent);}
+  .node-box.active rect{stroke:var(--accent); stroke-width:1.6; fill:var(--accent-soft);}
+  .topo-arrow{stroke:var(--border); stroke-width:1.4; fill:none; marker-end:url(#arrow);}
+  .topo-label{fill:var(--text-faint); font-family:var(--font-mono); font-size:9.5px;}
+  .kafka-band rect{fill:var(--panel-2); stroke:var(--accent); stroke-width:1; stroke-dasharray:3 3;}
+  .kafka-band text{fill:var(--accent); font-family:var(--font-mono); font-size:11px;}
+
+  .detail-panel{
+    border:1px solid var(--border); border-radius:10px; background:var(--panel); padding:22px;
+    display:flex; flex-direction:column; gap:14px; min-height:340px;
+  }
+  .detail-panel .dp-tag{font-family:var(--font-mono); font-size:10.5px; color:var(--accent); text-transform:uppercase; letter-spacing:.08em;}
+  .detail-panel h3{font-size:20px;}
+  .detail-panel p{color:var(--text-muted); font-size:13.5px;}
+  .dp-row{display:flex; justify-content:space-between; font-size:12.5px; border-top:1px solid var(--border-soft); padding-top:10px;}
+  .dp-row span:first-child{color:var(--text-faint); font-family:var(--font-mono); text-transform:uppercase; font-size:10.5px;}
+  .dp-row span:last-child{color:var(--text); font-family:var(--font-mono);}
+  .dp-hint{margin-top:auto; font-size:12px; color:var(--text-faint); font-style:italic;}
+
+  /* ---------- FLOWS ---------- */
+  .tabs{display:flex; gap:6px; flex-wrap:wrap; margin-bottom:26px;}
+  .tab-btn{
+    font-family:var(--font-mono); font-size:12px; padding:9px 14px; border-radius:7px;
+    border:1px solid var(--border); background:transparent; color:var(--text-muted); cursor:pointer;
+    transition:all .15s;
+  }
+  .tab-btn:hover{color:var(--text); border-color:var(--accent);}
+  .tab-btn.active{background:var(--accent-soft); color:var(--text); border-color:var(--accent);}
+  .flow-panel{display:none;}
+  .flow-panel.active{display:block;}
+  .flow-header{display:flex; justify-content:space-between; align-items:center; margin-bottom:22px; flex-wrap:wrap; gap:12px;}
+  .flow-header h3{font-size:19px;}
+  .play-btn{
+    font-family:var(--font-mono); font-size:12px; padding:9px 16px; border-radius:7px; border:1px solid var(--accent);
+    background:var(--accent-soft); color:var(--accent); cursor:pointer; display:flex; align-items:center; gap:8px;
+  }
+  .play-btn:hover{background:var(--accent); color:#08101F;}
+  .steps{display:flex; flex-direction:column; border-left:2px solid var(--border); margin-left:14px;}
+  .step{
+    position:relative; padding:14px 0 14px 28px; opacity:.55; transition:opacity .3s;
+  }
+  .step.active{opacity:1;}
+  .step::before{
+    content:''; position:absolute; left:-7px; top:18px; width:12px; height:12px; border-radius:50%;
+    background:var(--bg); border:2px solid var(--border); transition:all .3s;
+  }
+  .step.active::before{border-color:var(--accent); background:var(--accent); box-shadow:0 0 10px var(--accent);}
+  .step .actor{font-family:var(--font-mono); font-size:11px; color:var(--accent); text-transform:uppercase; letter-spacing:.06em; margin-bottom:3px;}
+  .step .action{font-size:14px; color:var(--text);}
+  .step .branches{display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;}
+
+  /* ---------- TECH STACK ---------- */
+  .stack-grid{display:grid; grid-template-columns:repeat(2,1fr); gap:18px;}
+  @media(max-width:800px){.stack-grid{grid-template-columns:1fr;}}
+  .stack-cat{border:1px solid var(--border); background:var(--panel); border-radius:10px; padding:20px;}
+  .stack-cat h4{font-size:14px; color:var(--text); margin-bottom:14px; display:flex; align-items:center; gap:8px;}
+  .stack-cat h4::before{content:''; width:8px; height:8px; background:var(--accent); border-radius:2px;}
+  .stack-item{padding:11px 0; border-top:1px solid var(--border-soft);}
+  .stack-item:first-of-type{border-top:none;}
+  .stack-item .name{font-family:var(--font-mono); font-size:13px; color:var(--accent-2, var(--accent)); margin-bottom:3px;}
+  .stack-item .purpose{font-size:12.5px; color:var(--text-muted);}
+
+  /* ---------- KAFKA TABLE ---------- */
+  table.kafka-table{width:100%; border-collapse:collapse; font-size:13px;}
+  table.kafka-table th{
+    text-align:left; font-family:var(--font-mono); font-size:10.5px; text-transform:uppercase; letter-spacing:.06em;
+    color:var(--text-faint); padding:10px 14px; border-bottom:1px solid var(--border);
+  }
+  table.kafka-table td{padding:13px 14px; border-bottom:1px solid var(--border-soft); color:var(--text-muted); vertical-align:top;}
+  table.kafka-table td.topic{font-family:var(--font-mono); color:var(--accent); white-space:nowrap;}
+  table.kafka-table tr:hover td{background:var(--panel-2);}
+
+  /* ---------- REPOS ---------- */
+  .repo-grid{display:grid; grid-template-columns:repeat(2,1fr); gap:18px;}
+  @media(max-width:900px){.repo-grid{grid-template-columns:1fr;}}
+  .repo-card{border:1px solid var(--border); background:var(--panel); border-radius:10px; padding:20px;}
+  .repo-card .repo-name{font-family:var(--font-mono); font-size:14px; color:var(--text); display:flex; align-items:center; gap:8px; margin-bottom:6px;}
+  .repo-card .repo-name .lang-dot{width:9px; height:9px; border-radius:50%; flex-shrink:0;}
+  .repo-card .repo-desc{font-size:12.5px; color:var(--text-muted); margin-bottom:14px;}
+  .tree{font-family:var(--font-mono); font-size:12px; color:var(--text-muted);}
+  .tree details{margin-left:14px;}
+  .tree > details{margin-left:0;}
+  .tree summary{cursor:pointer; color:var(--text); padding:3px 0; list-style:revert;}
+  .tree summary::marker{color:var(--accent);}
+  .tree li{list-style:none; padding:3px 0 3px 14px; display:flex; align-items:center; gap:7px;}
+  .tree li .fdot{width:6px; height:6px; border-radius:50%; flex-shrink:0; background:var(--text-faint);}
+  .tree li .fdot.yml{background:var(--review);}
+  .tree li .fdot.java{background:var(--accent);}
+  .tree li .fdot.py{background:var(--approve);}
+  .tree li .fdot.md{background:var(--text-muted);}
+  .tree li .fdot.tf{background:#B48CFF;}
+  .tree li .fdot.onnx{background:var(--block);}
+  .note-line{margin-top:14px; padding-top:12px; border-top:1px solid var(--border-soft); font-size:11.5px; color:var(--text-faint);}
+
+  /* ---------- SECURITY / DEPLOYMENT / NFR ---------- */
+  .card-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:16px;}
+  @media(max-width:900px){.card-grid{grid-template-columns:1fr 1fr;}}
+  @media(max-width:600px){.card-grid{grid-template-columns:1fr;}}
+  .info-card{border:1px solid var(--border); background:var(--panel); border-radius:10px; padding:18px;}
+  .info-card .num{font-family:var(--font-mono); font-size:11px; color:var(--accent); margin-bottom:8px;}
+  .info-card h4{font-size:14.5px; margin-bottom:8px;}
+  .info-card p{font-size:12.5px; color:var(--text-muted);}
+
+  svg.deploy{width:100%; height:auto;}
+  .deploy rect.cluster{fill:rgba(76,141,255,0.05); stroke:var(--accent); stroke-dasharray:4 3; stroke-width:1;}
+  .deploy rect.svc{fill:var(--panel-2); stroke:var(--border);}
+  .deploy rect.data{fill:var(--panel-2); stroke:#B48CFF;}
+  .deploy text.t{fill:var(--text); font-family:var(--font-body); font-size:11.5px;}
+  .deploy text.st{fill:var(--text-faint); font-family:var(--font-mono); font-size:9.5px;}
+  .deploy text.lbl{fill:var(--accent); font-family:var(--font-mono); font-size:11px;}
+  .deploy line{stroke:var(--border); stroke-width:1.2; marker-end:url(#arrow2);}
+
+  footer{padding:50px 0 70px; text-align:center;}
+  footer p{color:var(--text-faint); font-size:12.5px; font-family:var(--font-mono);}
+
+  @media(prefers-reduced-motion:reduce){
+    *{animation-duration:0.001ms !important; animation-iteration-count:1 !important; transition-duration:0.001ms !important;}
+  }
+</style>
+</head>
+<body>
+
+<header class="topnav">
+  <div class="topnav-inner">
+    <div class="brand"><span class="mark"></span>PayGuard</div>
+    <nav class="links" id="navLinks">
+      <a href="#overview">Overview</a>
+      <a href="#architecture">Architecture</a>
+      <a href="#flows">Flows</a>
+      <a href="#techstack">Tech stack</a>
+      <a href="#kafka">Kafka</a>
+      <a href="#repos">Repositories</a>
+      <a href="#security">Security</a>
+      <a href="#deployment">Deployment</a>
+    </nav>
+    <div class="status-pill"><span class="status-dot"></span>SYSTEM NOMINAL</div>
+  </div>
+</header>
+
+<!-- ============ HERO ============ -->
+<section class="hero" id="overview">
+  <div class="wrap">
+    <div class="eyebrow">Architecture documentation · v1.0</div>
+    <h1>Real-time fraud detection,<br>built as <span>six independent services</span>.</h1>
+    <p class="lede">PayGuard scores every merchant transaction in real time, approves / flags / blocks it in under 200ms, and keeps a full audit trail — from the charge to the settlement match.</p>
+
+    <div class="hero-grid">
+      <div class="principle-list">
+        <div class="principle">
+          <div class="k">Database per service</div>
+          <p>Every service owns its data. No shared schemas, no cross-service joins — Postgres per service, Redis added only where the Fraud Engine needs sub-millisecond feature lookups.</p>
+        </div>
+        <div class="principle">
+          <div class="k">Sync only where latency is the point</div>
+          <p>The single hard synchronous dependency in the platform is Payment → Fraud Engine. Everything else — alerts, reconciliation, reporting — flows through Kafka.</p>
+        </div>
+        <div class="principle">
+          <div class="k">Python trains, Java serves</div>
+          <p>Model development happens in Python. Real-time inference happens in the JVM via ONNX Runtime, with a rule-based fallback if the model can't answer in time.</p>
+        </div>
+      </div>
+
+      <div class="ticker-panel">
+        <div class="ticker-head">
+          <span>Fraud engine — live scoring feed</span>
+          <span class="live"><span class="dot"></span>streaming</span>
+        </div>
+        <div class="ticker-body" id="tickerBody"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="wrap"><div class="divider"></div></div>
+
+<!-- ============ ARCHITECTURE ============ -->
+<section class="section" id="architecture">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="tag">01 · System topology</div>
+      <h2>Six services, one gateway, one event bus.</h2>
+      <p>Click any node to see what it owns, what it talks to, and where its data lives.</p>
+    </div>
+
+    <div class="arch-layout">
+      <div class="console-panel">
+        <div class="console-label">payguard / system-topology.svg</div>
+        <svg class="topo" viewBox="0 0 620 430" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M2 1L8 5L2 9" fill="none" stroke="#3A4A6B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </marker>
+          </defs>
+
+          <!-- gateway -->
+          <path class="topo-arrow" d="M310,54 L150,120"/>
+          <path class="topo-arrow" d="M310,54 L310,120"/>
+          <path class="topo-arrow" d="M310,54 L470,120"/>
+          <g class="node-box" data-node="gateway" onclick="selectNode('gateway')">
+            <rect x="220" y="14" width="180" height="40" rx="6"/>
+            <text x="310" y="38" text-anchor="middle">API Gateway</text>
+          </g>
+
+          <!-- row: user / payment / fraud -->
+          <g class="node-box" data-node="user" onclick="selectNode('user')">
+            <rect x="60" y="120" width="180" height="50" rx="6"/>
+            <text x="150" y="142" text-anchor="middle">User Service</text>
+            <text class="sub" x="150" y="160" text-anchor="middle">Postgres</text>
+          </g>
+          <g class="node-box" data-node="payment" onclick="selectNode('payment')">
+            <rect x="220" y="120" width="180" height="50" rx="6"/>
+            <text x="310" y="142" text-anchor="middle">Payment Service</text>
+            <text class="sub" x="310" y="160" text-anchor="middle">Postgres</text>
+          </g>
+          <g class="node-box" data-node="fraud" onclick="selectNode('fraud')">
+            <rect x="380" y="120" width="180" height="50" rx="6"/>
+            <text x="470" y="142" text-anchor="middle">Fraud Engine</text>
+            <text class="sub" x="470" y="160" text-anchor="middle">Postgres + Redis</text>
+          </g>
+          <path class="topo-arrow" d="M400,145 L378,145"/>
+          <text class="topo-label" x="389" y="112" text-anchor="middle">sync REST</text>
+
+          <!-- stripe -->
+          <g class="node-box" data-node="stripe" onclick="selectNode('stripe')">
+            <rect x="18" y="222" width="90" height="40" rx="6"/>
+            <text x="63" y="246" text-anchor="middle" style="font-size:11px">Stripe</text>
+          </g>
+          <path class="topo-arrow" d="M108,242 L220,160"/>
+          <text class="topo-label" x="150" y="200" text-anchor="middle">webhooks</text>
+
+          <!-- kafka band -->
+          <path class="topo-arrow" d="M310,170 L310,222"/>
+          <path class="topo-arrow" d="M470,170 L470,222"/>
+          <g class="kafka-band" data-node="kafka" onclick="selectNode('kafka')" style="cursor:pointer;">
+            <rect x="60" y="222" width="500" height="42" rx="6"/>
+            <text x="310" y="248" text-anchor="middle">⟷ Kafka event bus</text>
+          </g>
+
+          <!-- notification / reconciliation -->
+          <path class="topo-arrow" d="M230,264 L230,308"/>
+          <path class="topo-arrow" d="M420,264 L420,308"/>
+          <g class="node-box" data-node="notification" onclick="selectNode('notification')">
+            <rect x="130" y="308" width="200" height="50" rx="6"/>
+            <text x="230" y="330" text-anchor="middle">Notification Service</text>
+            <text class="sub" x="230" y="348" text-anchor="middle">Postgres</text>
+          </g>
+          <g class="node-box" data-node="reconciliation" onclick="selectNode('reconciliation')">
+            <rect x="340" y="308" width="200" height="50" rx="6"/>
+            <text x="440" y="330" text-anchor="middle">Reconciliation</text>
+            <text class="sub" x="440" y="348" text-anchor="middle">Postgres</text>
+          </g>
+        </svg>
+      </div>
+
+      <div class="detail-panel" id="detailPanel"><!-- filled by JS --></div>
+    </div>
+  </div>
+</section>
+
+<div class="wrap"><div class="divider"></div></div>
+
+<!-- ============ FLOWS ============ -->
+<section class="section" id="flows">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="tag">02 · Sequence flows</div>
+      <h2>How a transaction actually moves through the system.</h2>
+      <p>Five flows, from the synchronous fraud check to the nightly settlement match. Press play to step through one.</p>
+    </div>
+
+    <div class="tabs" id="flowTabs"></div>
+    <div class="console-panel" id="flowPanels"></div>
+  </div>
+</section>
+
+<div class="wrap"><div class="divider"></div></div>
+
+<!-- ============ TECH STACK ============ -->
+<section class="section" id="techstack">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="tag">03 · Tech stack</div>
+      <h2>What runs it, and why.</h2>
+      <p>Every technology here earns its place in a specific part of the request or training path.</p>
+    </div>
+    <div class="stack-grid" id="stackGrid"></div>
+  </div>
+</section>
+
+<div class="wrap"><div class="divider"></div></div>
+
+<!-- ============ KAFKA ============ -->
+<section class="section" id="kafka">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="tag">04 · Event contracts</div>
+      <h2>Kafka topics</h2>
+      <p>The full list of events crossing the bus, who produces them, and who's listening.</p>
+    </div>
+    <div class="console-panel">
+      <table class="kafka-table">
+        <thead><tr><th>Topic</th><th>Producer</th><th>Consumers</th><th>Payload</th></tr></thead>
+        <tbody id="kafkaBody"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<div class="wrap"><div class="divider"></div></div>
+
+<!-- ============ REPOS ============ -->
+<section class="section" id="repos">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="tag">05 · Repositories</div>
+      <h2>Polyrepo layout — one repo per service.</h2>
+      <p>Nine repositories: six services, one shared event-schema library, one training pipeline, one infrastructure repo. Expand a tree to see its layout.</p>
+    </div>
+    <div class="repo-grid" id="repoGrid"></div>
+  </div>
+</section>
+
+<div class="wrap"><div class="divider"></div></div>
+
+<!-- ============ SECURITY ============ -->
+<section class="section" id="security">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="tag">06 · Security</div>
+      <h2>Trust boundaries</h2>
+    </div>
+    <div class="card-grid">
+      <div class="info-card"><div class="num">AUTH</div><h4>OAuth2 / JWT</h4><p>User Service issues tokens; every service validates them independently via Spring Security. RBAC enforced per endpoint.</p></div>
+      <div class="info-card"><div class="num">PCI</div><h4>Card data never lands here</h4><p>Stripe.js tokenizes on the client. Payment Service only ever sees Stripe tokens and charge IDs via the Stripe Java SDK.</p></div>
+      <div class="info-card"><div class="num">WEBHOOK</div><h4>Signature verification</h4><p>Every inbound Stripe webhook is signature-checked before it's processed — no unverified event mutates state.</p></div>
+      <div class="info-card"><div class="num">TRANSPORT</div><h4>mTLS in-cluster</h4><p>The Payment → Fraud Engine synchronous call runs over mTLS inside the EKS cluster.</p></div>
+      <div class="info-card"><div class="num">SECRETS</div><h4>Never in source</h4><p>AWS Secrets Manager / Kubernetes secrets, provisioned by Terraform.</p></div>
+      <div class="info-card"><div class="num">TENANCY</div><h4>Scoped by merchant_id</h4><p>Every table, cache key, and Kafka partition key carries merchant_id for isolation.</p></div>
+    </div>
+  </div>
+</section>
+
+<div class="wrap"><div class="divider"></div></div>
+
+<!-- ============ DEPLOYMENT ============ -->
+<section class="section" id="deployment">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="tag">07 · Deployment</div>
+      <h2>Infrastructure, provisioned as code.</h2>
+      <p>Terraform provisions the cluster and managed data services; GitHub Actions deploys into it and publishes trained models.</p>
+    </div>
+    <div class="console-panel deploy">
+      <svg class="deploy" viewBox="0 0 620 360" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="arrow2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M2 1L8 5L2 9" fill="none" stroke="#3A4A6B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </marker>
+        </defs>
+        <rect class="cluster" x="20" y="20" width="580" height="130" rx="8"/>
+        <text class="lbl" x="34" y="40">AWS EKS CLUSTER</text>
+        <g>
+          <rect class="svc" x="34" y="54" width="86" height="70" rx="5"/><text class="t" x="77" y="82" text-anchor="middle">Gateway</text><text class="st" x="77" y="98" text-anchor="middle">pods</text>
+          <rect class="svc" x="132" y="54" width="86" height="70" rx="5"/><text class="t" x="175" y="82" text-anchor="middle">User</text><text class="st" x="175" y="98" text-anchor="middle">pods</text>
+          <rect class="svc" x="230" y="54" width="86" height="70" rx="5"/><text class="t" x="273" y="82" text-anchor="middle">Payment</text><text class="st" x="273" y="98" text-anchor="middle">pods</text>
+          <rect class="svc" x="328" y="54" width="86" height="70" rx="5"/><text class="t" x="371" y="82" text-anchor="middle">Fraud</text><text class="st" x="371" y="98" text-anchor="middle">pods</text>
+          <rect class="svc" x="426" y="54" width="86" height="70" rx="5"/><text class="t" x="469" y="82" text-anchor="middle">Notify</text><text class="st" x="469" y="98" text-anchor="middle">pods</text>
+          <rect class="svc" x="524" y="54" width="62" height="70" rx="5"/><text class="t" x="555" y="82" text-anchor="middle" style="font-size:10px">Recon.</text><text class="st" x="555" y="98" text-anchor="middle">pods</text>
+        </g>
+
+        <line x1="310" y1="150" x2="310" y2="190"/>
+        <text class="lbl" x="34" y="212">MANAGED DATA SERVICES</text>
+        <rect class="data" x="34" y="222" width="130" height="56" rx="5"/><text class="t" x="99" y="246" text-anchor="middle">RDS Postgres</text><text class="st" x="99" y="262" text-anchor="middle">per-service DBs</text>
+        <rect class="data" x="180" y="222" width="130" height="56" rx="5"/><text class="t" x="245" y="246" text-anchor="middle">ElastiCache</text><text class="st" x="245" y="262" text-anchor="middle">Redis</text>
+        <rect class="data" x="326" y="222" width="130" height="56" rx="5"/><text class="t" x="391" y="246" text-anchor="middle">MSK</text><text class="st" x="391" y="262" text-anchor="middle">Kafka</text>
+        <rect class="data" x="472" y="222" width="114" height="56" rx="5"/><text class="t" x="529" y="246" text-anchor="middle">S3</text><text class="st" x="529" y="262" text-anchor="middle">model registry</text>
+
+        <rect class="svc" x="34" y="308" width="160" height="40" rx="5" style="stroke:#B48CFF"/><text class="t" x="114" y="332" text-anchor="middle">Terraform</text>
+        <line x1="114" y1="308" x2="114" y2="150" stroke-dasharray="3 3"/>
+        <rect class="svc" x="220" y="308" width="180" height="40" rx="5" style="stroke:#B48CFF"/><text class="t" x="310" y="332" text-anchor="middle">GitHub Actions</text>
+        <line x1="310" y1="308" x2="371" y2="126" stroke-dasharray="3 3"/>
+        <line x1="360" y1="308" x2="529" y2="278" stroke-dasharray="3 3"/>
+      </svg>
+    </div>
+
+    <div class="section-head" style="margin-top:56px;">
+      <div class="tag">08 · Operational notes</div>
+      <h2>Non-functional considerations</h2>
+    </div>
+    <div class="card-grid">
+      <div class="info-card"><div class="num">LATENCY</div><h4>Sub-200ms fraud check</h4><p>Hard timeout on Payment → Fraud Engine, with a rule-based fallback rather than a silent hang.</p></div>
+      <div class="info-card"><div class="num">RESILIENCE</div><h4>Circuit breakers</h4><p>Resilience4j around the Fraud Engine call; ONNX inference itself falls back to the rules engine on model failure.</p></div>
+      <div class="info-card"><div class="num">GOVERNANCE</div><h4>Model versioning</h4><p>Every ONNX version is tagged and logged against the transaction it scored — enables rollback and audit.</p></div>
+      <div class="info-card"><div class="num">IDEMPOTENCY</div><h4>At-least-once delivery</h4><p>Stripe webhook handling and Kafka consumers are built idempotent by design.</p></div>
+      <div class="info-card"><div class="num">SCALING</div><h4>Independent per service</h4><p>Fraud Engine and Payment Service scale on latency/queue depth; they sit on the critical path.</p></div>
+      <div class="info-card"><div class="num">OBSERVABILITY</div><h4>Trace the sync path</h4><p>Distributed tracing across Gateway → Payment → Fraud Engine attributes latency to a specific hop.</p></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap"><p>PAYGUARD · ARCHITECTURE DOCUMENTATION · V1.0</p></div>
+</footer>
+
+<script>
+/* ================= TICKER ================= */
+const merchants = ["Northwind Goods","Aster Coffee Co.","Bramble & Fox","Lumen Supply","Kestrel Outfitters","Marlowe Books","Solace Studio","Piston & Pine"];
+const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+function randTxn(){
+  const roll = Math.random();
+  let decision = 'approve', score = (Math.random()*30+2).toFixed(0);
+  if(roll > 0.85){decision='block'; score=(Math.random()*15+85).toFixed(0);}
+  else if(roll > 0.65){decision='review'; score=(Math.random()*25+45).toFixed(0);}
+  const id = 'tx_' + Math.random().toString(36).slice(2,8);
+  const merchant = merchants[Math.floor(Math.random()*merchants.length)];
+  return {id, merchant, score, decision};
+}
+function tickerRow(t){
+  const el = document.createElement('div');
+  el.className = 'ticker-row';
+  el.innerHTML = `<span class="id">${t.id}</span><span class="merchant">${t.merchant}</span><span class="score">${t.score}/100</span><span class="badge ${t.decision}">${t.decision}</span>`;
+  return el;
+}
+const tickerBody = document.getElementById('tickerBody');
+for(let i=0;i<8;i++){ tickerBody.appendChild(tickerRow(randTxn())); }
+if(!reduced){
+  setInterval(()=>{
+    tickerBody.insertBefore(tickerRow(randTxn()), tickerBody.firstChild);
+    if(tickerBody.children.length > 9){ tickerBody.removeChild(tickerBody.lastChild); }
+  }, 2200);
+}
+
+/* ================= NAV ACTIVE STATE ================= */
+const navLinks = document.querySelectorAll('#navLinks a');
+const sections = [...navLinks].map(a => document.querySelector(a.getAttribute('href')));
+const io = new IntersectionObserver((entries)=>{
+  entries.forEach(e=>{
+    if(e.isIntersecting){
+      const id = '#'+e.target.id;
+      navLinks.forEach(a=>a.classList.toggle('active', a.getAttribute('href')===id));
+    }
+  });
+}, {rootMargin:'-40% 0px -50% 0px'});
+sections.forEach(s=>s && io.observe(s));
+
+/* ================= ARCHITECTURE DETAIL PANEL ================= */
+const nodeDetails = {
+  gateway:{tag:'Edge', title:'API Gateway', desc:'Single entry point for all client traffic. Handles routing, coarse rate limiting per merchant tier, and TLS termination before requests reach any service.', tech:'Spring Cloud Gateway', store:'—', calls:'Routes to User, Payment, Fraud Engine'},
+  user:{tag:'Identity', title:'User Service', desc:'Owns registration, authentication, OAuth2/JWT issuance, merchant profiles, and role-based access control for dashboard users.', tech:'Spring Boot, Spring Security', store:'PostgreSQL', calls:'Called by Gateway (sync)'},
+  payment:{tag:'Core domain', title:'Payment Service', desc:'Integrates with Stripe for charge creation, refunds, and webhook processing. Calls the Fraud Engine synchronously before finalizing a charge, and publishes payment events to Kafka via the outbox pattern.', tech:'Spring Boot, Stripe Java SDK', store:'PostgreSQL', calls:'Fraud Engine (sync), Kafka (async), Stripe (webhooks)'},
+  fraud:{tag:'AI core', title:'Fraud Engine', desc:'Evaluates every transaction in real time: loads a pre-trained ONNX model, pulls features from Redis, and returns a risk score and decision. Falls back to a deterministic rules engine if the model or cache is unavailable.', tech:'Spring Boot, ONNX Runtime (Java)', store:'PostgreSQL + Redis', calls:'Called by Payment (sync), publishes to Kafka'},
+  notification:{tag:'Delivery', title:'Notification Service', desc:'Consumes payment and fraud events from Kafka and sends email/SMS alerts for transactions, fraud flags, and settlement reports.', tech:'Spring Boot', store:'PostgreSQL', calls:'Consumes from Kafka'},
+  reconciliation:{tag:'Finance', title:'Reconciliation Service', desc:'Runs daily settlement matching against Stripe payout data, flags discrepancies, and produces financial reports. Publishes reconciliation.completed back to Kafka.', tech:'Spring Boot', store:'PostgreSQL', calls:'Consumes + publishes to Kafka'},
+  kafka:{tag:'Backbone', title:'Kafka Event Bus', desc:'Decouples every service from every other. Payment events, fraud alerts, and settlement events all flow through here, giving replay and audit for free.', tech:'Apache Kafka (MSK)', store:'—', calls:'payment.*, fraud.alert.*, reconciliation.completed'},
+  stripe:{tag:'External', title:'Stripe', desc:'Card tokenization, charge processing, and payout/settlement data. PayGuard never stores raw card numbers — only Stripe tokens and charge IDs.', tech:'Stripe API', store:'—', calls:'Webhooks into Payment Service'}
+};
+function selectNode(id){
+  const d = nodeDetails[id];
+  document.querySelectorAll('.node-box, .kafka-band').forEach(n=>n.classList.toggle('active', n.dataset.node===id));
+  document.getElementById('detailPanel').innerHTML = `
+    <div class="dp-tag">${d.tag}</div>
+    <h3>${d.title}</h3>
+    <p>${d.desc}</p>
+    <div class="dp-row"><span>Tech</span><span>${d.tech}</span></div>
+    <div class="dp-row"><span>Data store</span><span>${d.store}</span></div>
+    <div class="dp-row"><span>Connections</span><span>${d.calls}</span></div>
+    <div class="dp-hint">Click another node to compare.</div>
+  `;
+}
+selectNode('fraud');
+
+/* ================= FLOWS ================= */
+const flows = [
+ {id:'payment-fraud', name:'Payment + fraud check', steps:[
+   {actor:'Client', action:'Sends POST /payments to the API Gateway.'},
+   {actor:'API Gateway', action:'Forwards the authenticated request to Payment Service.'},
+   {actor:'Payment Service', action:'Calls the Fraud Engine synchronously with a ~200ms timeout budget.'},
+   {actor:'Fraud Engine', action:'Reads velocity and device-reputation features from Redis, then runs ONNX model inference (rules engine used as fallback on timeout or error).'},
+   {actor:'Fraud Engine', action:'Returns a risk score and one of three decisions.', decision:true},
+   {actor:'Payment Service', action:'Approve → creates the charge via the Stripe SDK. Review/Block → holds the transaction and lets the Fraud Engine publish an alert.'},
+   {actor:'Payment Service', action:'Publishes payment.created / completed / failed to Kafka via the transactional outbox.'}
+ ]},
+ {id:'alert', name:'Fraud alert → notification', steps:[
+   {actor:'Fraud Engine', action:'Publishes fraud.alert.high or fraud.alert.medium with transaction_id, score, and reasons.'},
+   {actor:'Kafka', action:'Delivers the event to the Notification Service consumer group.'},
+   {actor:'Notification Service', action:"Resolves the merchant's notification preferences (email, SMS, or both)."},
+   {actor:'Notification Service', action:'Sends the alert to the merchant with transaction context and recommended action.'}
+ ]},
+ {id:'reconciliation', name:'Daily settlement reconciliation', steps:[
+   {actor:'Stripe', action:'Delivers the daily settlement / payout file to Reconciliation Service.'},
+   {actor:'Reconciliation Service', action:'Replays payment.completed events from Kafka to build the expected settlement set.'},
+   {actor:'Reconciliation Service', action:'Matches settlement records against expected payments, line by line.'},
+   {actor:'Reconciliation Service', action:'Flags any discrepancy for finance review; marks matched records as reconciled.'},
+   {actor:'Reconciliation Service', action:'Publishes reconciliation.completed, which Notification Service turns into a settlement report.'}
+ ]},
+ {id:'outbox', name:'Reliable event publish (outbox)', steps:[
+   {actor:'Payment Service', action:'Writes the transaction row and an outbox row in a single local Postgres transaction.'},
+   {actor:'CDC relay (Debezium)', action:'Tails the outbox table for new, unpublished rows.'},
+   {actor:'CDC relay', action:'Publishes each row to Kafka, then marks it as sent.'},
+   {actor:'Result', action:'The transaction record and its event can never silently diverge, even across a crash mid-write.'}
+ ]},
+ {id:'ml', name:'ML training → serving', steps:[
+   {actor:'Python pipeline', action:'Trains a classifier on labeled transaction data using scikit-learn / XGBoost.'},
+   {actor:'Python pipeline', action:'Validates against a holdout set; exports the model to ONNX format.'},
+   {actor:'Model registry', action:'Stores the versioned ONNX artifact in S3.'},
+   {actor:'Fraud Engine', action:'Loads the new model version via ONNX Runtime (Java) on the next deploy or hot-reload cycle.'},
+   {actor:'Fraud Engine', action:'Serves real-time inference, tagging every score with the model version used.'}
+ ]}
+];
+
+const tabsEl = document.getElementById('flowTabs');
+const panelsEl = document.getElementById('flowPanels');
+flows.forEach((f,i)=>{
+  const btn = document.createElement('button');
+  btn.className = 'tab-btn' + (i===0?' active':'');
+  btn.textContent = f.name;
+  btn.onclick = ()=>showFlow(f.id);
+  tabsEl.appendChild(btn);
+
+  const panel = document.createElement('div');
+  panel.className = 'flow-panel' + (i===0?' active':'');
+  panel.id = 'flow-'+f.id;
+  const stepsHtml = f.steps.map((s,idx)=>{
+    const branchHtml = s.decision ? `<div class="branches">
+        <span class="badge approve">approve</span><span class="badge review">review</span><span class="badge block">block</span>
+      </div>` : '';
+    return `<div class="step" data-idx="${idx}">
+      <div class="actor">${s.actor}</div>
+      <div class="action">${s.action}</div>
+      ${branchHtml}
+    </div>`;
+  }).join('');
+  panel.innerHTML = `
+    <div class="flow-header">
+      <h3>${f.name}</h3>
+      <button class="play-btn" onclick="playFlow('${f.id}')">▶ Play sequence</button>
+    </div>
+    <div class="steps">${stepsHtml}</div>
+  `;
+  panelsEl.appendChild(panel);
+});
+
+function showFlow(id){
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active', flows[i].id===id));
+  document.querySelectorAll('.flow-panel').forEach(p=>p.classList.toggle('active', p.id==='flow-'+id));
+}
+let playTimers = [];
+function playFlow(id){
+  playTimers.forEach(t=>clearTimeout(t));
+  playTimers = [];
+  const panel = document.getElementById('flow-'+id);
+  const steps = panel.querySelectorAll('.step');
+  steps.forEach(s=>s.classList.remove('active'));
+  steps.forEach((s,i)=>{
+    playTimers.push(setTimeout(()=>{ s.classList.add('active'); }, i*550));
+  });
+}
+playFlow(flows[0].id);
+
+/* ================= TECH STACK ================= */
+const techStack = [
+ {category:'Core framework & runtime', items:[
+   {name:'Java 17', purpose:'Language runtime for all Spring Boot services — LTS stability for a financial-grade backend.'},
+   {name:'Spring Boot', purpose:'Application framework for User, Payment, Fraud Engine, Notification, and Reconciliation.'},
+   {name:'Spring Cloud Gateway', purpose:'Single entry point for routing, rate limiting, and TLS termination.'},
+   {name:'Spring Security (OAuth2/JWT)', purpose:'Issues and validates JWTs; enforces RBAC per endpoint.'}
+ ]},
+ {category:'Payments', items:[
+   {name:'Stripe Java SDK', purpose:'Charge creation, refunds, and webhook signature verification inside Payment Service.'}
+ ]},
+ {category:'Machine learning', items:[
+   {name:'Python', purpose:'Model training and experimentation, fully decoupled from the serving runtime.'},
+   {name:'scikit-learn / XGBoost', purpose:'Training libraries for the fraud classification model.'},
+   {name:'ONNX', purpose:'Portable model format — the single artifact that crosses from Python to Java.'},
+   {name:'ONNX Runtime (Java)', purpose:'Loads and executes the trained model for real-time inference in the Fraud Engine.'}
+ ]},
+ {category:'Messaging & data', items:[
+   {name:'Apache Kafka', purpose:'Event backbone for payment, fraud alert, and settlement events.'},
+   {name:'PostgreSQL', purpose:'System of record — one database per service.'},
+   {name:'Redis', purpose:'Real-time feature cache and score cache for the Fraud Engine.'}
+ ]},
+ {category:'Infrastructure', items:[
+   {name:'Docker / Docker Compose', purpose:'Local development environment and consistent build artifacts.'},
+   {name:'Kubernetes (AWS EKS)', purpose:'Container orchestration and autoscaling in production.'},
+   {name:'Terraform', purpose:'Infrastructure as code for EKS, RDS, ElastiCache, MSK, and S3.'},
+   {name:'AWS', purpose:'Cloud provider hosting the platform end to end.'}
+ ]},
+ {category:'CI/CD & quality', items:[
+   {name:'GitHub Actions', purpose:'Independent Java and Python pipelines — build, test, and deploy each service on its own cadence.'},
+   {name:'JUnit 5 / Mockito', purpose:'Unit and behavioral testing across the Spring Boot services.'},
+   {name:'Testcontainers', purpose:'Integration tests against real Postgres, Kafka, and Redis instances in CI.'}
+ ]},
+ {category:'Docs & observability', items:[
+   {name:'springdoc-openapi (Swagger)', purpose:'Auto-generated, browsable API documentation for every service.'},
+   {name:'Prometheus', purpose:'Metrics collection — latency, throughput, Kafka consumer lag.'},
+   {name:'Grafana', purpose:'Dashboards for platform health and fraud-decision rates.'}
+ ]}
+];
+const stackGrid = document.getElementById('stackGrid');
+techStack.forEach(cat=>{
+  const div = document.createElement('div');
+  div.className = 'stack-cat';
+  div.innerHTML = `<h4>${cat.category}</h4>` + cat.items.map(it=>`
+    <div class="stack-item"><div class="name">${it.name}</div><div class="purpose">${it.purpose}</div></div>
+  `).join('');
+  stackGrid.appendChild(div);
+});
+
+/* ================= KAFKA TABLE ================= */
+const kafkaTopics = [
+ {topic:'payment.created', producer:'Payment Service', consumers:'Reconciliation, Notification', payload:'transaction_id, merchant_id, amount, status'},
+ {topic:'payment.completed', producer:'Payment Service', consumers:'Reconciliation, Notification', payload:'transaction_id, charge details'},
+ {topic:'payment.failed', producer:'Payment Service', consumers:'Notification', payload:'transaction_id, failure reason'},
+ {topic:'fraud.alert.high', producer:'Fraud Engine', consumers:'Notification', payload:'transaction_id, score, decision, reasons'},
+ {topic:'fraud.alert.medium', producer:'Fraud Engine', consumers:'Notification', payload:'transaction_id, score, decision, reasons'},
+ {topic:'reconciliation.completed', producer:'Reconciliation Service', consumers:'Notification', payload:'settlement_id, match status, discrepancies'}
+];
+document.getElementById('kafkaBody').innerHTML = kafkaTopics.map(k=>`
+  <tr><td class="topic">${k.topic}</td><td>${k.producer}</td><td>${k.consumers}</td><td>${k.payload}</td></tr>
+`).join('');
+
+/* ================= REPOS ================= */
+function fdot(file){
+  const ext = file.split('.').pop();
+  const map = {yml:'yml', yaml:'yml', java:'java', py:'py', md:'md', tf:'tf', onnx:'onnx'};
+  return `<span class="fdot ${map[ext]||''}"></span>`;
+}
+function renderTree(node){
+  if(node.type==='file'){
+    return `<li>${fdot(node.name)}${node.name}</li>`;
+  }
+  const children = (node.children||[]).map(renderTree).join('');
+  return `<details ${node.open?'open':''}><summary>${node.name}/</summary><div>${children}</div></details>`;
+}
+
+const standardLayout = {name:'src/main/java/com/payguard/&lt;service&gt;', type:'folder', open:true, children:[
+  {name:'config', type:'folder', children:[{name:'SecurityConfig.java', type:'file'},{name:'KafkaConfig.java', type:'file'}]},
+  {name:'controller', type:'folder', children:[{name:'*Controller.java', type:'file'}]},
+  {name:'service', type:'folder', children:[{name:'*Service.java', type:'file'}]},
+  {name:'repository', type:'folder', children:[{name:'*Repository.java', type:'file'}]},
+  {name:'domain', type:'folder', children:[{name:'*.java (entities)', type:'file'}]},
+  {name:'event', type:'folder', children:[{name:'*Producer.java / *Consumer.java', type:'file'}]},
+  {name:'resources', type:'folder', children:[{name:'application.yml', type:'file'}]},
+]};
+
+const repos = [
+ {name:'payguard-api-gateway', lang:'#4C8DFF', desc:'Spring Cloud Gateway routes, rate limiting, JWT pre-validation.', tree:{name:'.', type:'folder', open:true, children:[
+    {name:'src/main/java/.../route', type:'folder', children:[{name:'RouteConfig.java', type:'file'}]},
+    {name:'src/main/resources', type:'folder', children:[{name:'application.yml', type:'file'}]},
+    {name:'Dockerfile', type:'file'}, {name:'README.md', type:'file'}
+ ]}},
+ {name:'payguard-user-service', lang:'#4C8DFF', desc:'Registration, auth, OAuth2/JWT, merchant profiles, RBAC.', tree:standardLayout},
+ {name:'payguard-payment-service', lang:'#4C8DFF', desc:'Stripe integration, charges, refunds, webhook processing, outbox publisher.', tree:{name:'.', type:'folder', open:true, children:[
+    standardLayout,
+    {name:'src/main/java/.../outbox', type:'folder', children:[{name:'OutboxEntry.java', type:'file'},{name:'OutboxRelayConfig.java', type:'file'}]},
+    {name:'src/test', type:'folder', children:[{name:'PaymentServiceTest.java', type:'file'}]},
+    {name:'Dockerfile', type:'file'}
+ ]}},
+ {name:'payguard-fraud-engine', lang:'#34D399', desc:'Real-time scoring — ONNX model serving plus rules-engine fallback.', tree:{name:'.', type:'folder', open:true, children:[
+    {name:'src/main/java/.../scoring', type:'folder', children:[{name:'OnnxScoringService.java', type:'file'},{name:'RulesFallbackEngine.java', type:'file'},{name:'FeatureCacheClient.java', type:'file'}]},
+    {name:'src/main/java/.../controller', type:'folder', children:[{name:'ScoreController.java', type:'file'}]},
+    {name:'src/main/resources/models', type:'folder', children:[{name:'fraud-model-v3.onnx', type:'file'}]},
+    {name:'src/test', type:'folder', children:[{name:'ScoringServiceTest.java', type:'file'}]},
+    {name:'Dockerfile', type:'file'}
+ ]}},
+ {name:'payguard-fraud-model-training', lang:'#F5A524', desc:'Python training pipeline — features, training, validation, ONNX export.', tree:{name:'.', type:'folder', open:true, children:[
+    {name:'notebooks', type:'folder', children:[{name:'exploration.ipynb', type:'file'}]},
+    {name:'src/features', type:'folder', children:[{name:'feature_pipeline.py', type:'file'}]},
+    {name:'src/training', type:'folder', children:[{name:'train_xgboost.py', type:'file'},{name:'evaluate.py', type:'file'}]},
+    {name:'src/export', type:'folder', children:[{name:'export_onnx.py', type:'file'}]},
+    {name:'tests', type:'folder', children:[{name:'test_features.py', type:'file'}]},
+    {name:'requirements.txt', type:'file'}, {name:'README.md', type:'file'}
+ ]}},
+ {name:'payguard-notification-service', lang:'#4C8DFF', desc:'Kafka consumer — email/SMS delivery for alerts and reports.', tree:standardLayout},
+ {name:'payguard-reconciliation-service', lang:'#4C8DFF', desc:'Daily settlement matching, discrepancy detection, financial reporting.', tree:standardLayout},
+ {name:'payguard-event-schemas', lang:'#B48CFF', desc:'Shared Avro/JSON schemas for every Kafka topic — versioned contract library.', tree:{name:'.', type:'folder', open:true, children:[
+    {name:'schemas/payment', type:'folder', children:[{name:'payment-created.avsc', type:'file'},{name:'payment-completed.avsc', type:'file'}]},
+    {name:'schemas/fraud', type:'folder', children:[{name:'fraud-alert.avsc', type:'file'}]},
+    {name:'schemas/reconciliation', type:'folder', children:[{name:'reconciliation-completed.avsc', type:'file'}]},
+    {name:'README.md', type:'file'}
+ ]}},
+ {name:'payguard-infrastructure', lang:'#B48CFF', desc:'Terraform + Kubernetes manifests for the entire platform.', tree:{name:'.', type:'folder', open:true, children:[
+    {name:'terraform/eks', type:'folder', children:[{name:'main.tf', type:'file'},{name:'variables.tf', type:'file'}]},
+    {name:'terraform/rds', type:'folder', children:[{name:'main.tf', type:'file'}]},
+    {name:'terraform/msk', type:'folder', children:[{name:'main.tf', type:'file'}]},
+    {name:'terraform/elasticache', type:'folder', children:[{name:'main.tf', type:'file'}]},
+    {name:'k8s/base', type:'folder', children:[{name:'deployment.yml', type:'file'},{name:'service.yml', type:'file'}]},
+    {name:'k8s/overlays/prod', type:'folder', children:[{name:'kustomization.yml', type:'file'}]},
+    {name:'.github/workflows', type:'folder', children:[{name:'terraform-plan.yml', type:'file'},{name:'terraform-apply.yml', type:'file'}]}
+ ]}}
+];
+const repoGrid = document.getElementById('repoGrid');
+repos.forEach(r=>{
+  const card = document.createElement('div');
+  card.className = 'repo-card';
+  card.innerHTML = `
+    <div class="repo-name"><span class="lang-dot" style="background:${r.lang}"></span>${r.name}</div>
+    <div class="repo-desc">${r.desc}</div>
+    <div class="tree">${renderTree(r.tree)}</div>
+  `;
+  repoGrid.appendChild(card);
+});
+</script>
+</body>
+</html>
