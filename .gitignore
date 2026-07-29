@@ -1,0 +1,106 @@
+# =============================================================================
+# PayGuard Core — root .gitignore
+#
+# This file covers the umbrella repo's own files (scripts, docs, local-dev).
+# Each submodule maintains its own .gitignore for service-specific artefacts.
+# =============================================================================
+
+# ---- OS artefacts -----------------------------------------------------------
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+ehthumbs.db
+desktop.ini
+
+# ---- Editor / IDE -----------------------------------------------------------
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+*.code-workspace
+*.sublime-project
+*.sublime-workspace
+.project
+.classpath
+.settings/
+*.swp
+*.swo
+*~
+
+# ---- Secrets & credentials — NEVER commit these ----------------------------
+.env
+.env.*
+!.env.example          # the example template is safe to commit
+*.pem
+*.key
+*.p12
+*.jks
+*.pfx
+secrets/
+credentials/
+
+# ---- Local dev stack --------------------------------------------------------
+# Docker volumes and override files are local-only
+local-dev/docker-compose.override.yml
+local-dev/.env
+!local-dev/.env.example
+
+# ---- Terraform (state lives in S3 / remote backend, never locally) ----------
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfstate.backup
+*.tfplan
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+
+# ---- Python artefacts -------------------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+.venv/
+venv/
+env/
+.Python
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+coverage.xml
+*.onnx               # model artefacts live in S3, not in git
+
+# ---- Java / Maven artefacts -------------------------------------------------
+target/
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+hs_err_pid*.log
+replay_pid*.log
+
+# ---- Kubernetes secrets (should use Sealed Secrets / ESO in production) -----
+**/k8s/**/*secret*.yml
+**/k8s/**/*secret*.yaml
+
+# ---- Logs & temp files ------------------------------------------------------
+*.log
+*.tmp
+*.temp
+tmp/
+temp/
