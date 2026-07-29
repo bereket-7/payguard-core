@@ -1,0 +1,19 @@
+# Global fallback — every file not matched below requires a review from the platform team.
+* @bereket-7
+
+# Umbrella repo tooling
+/.github/          @bereket-7
+/scripts/          @bereket-7
+/local-dev/        @bereket-7
+/docs/             @bereket-7
+
+# Submodule pointer files — bump PRs must be reviewed by the owning team
+/services/payguard-api-gateway              @bereket-7
+/services/payguard-user-service             @bereket-7
+/services/payguard-payment-service          @bereket-7
+/services/payguard-fraud-engine             @bereket-7
+/services/payguard-notification-service     @bereket-7
+/services/payguard-reconciliation-service   @bereket-7
+/services/payguard-fraud-model-training     @bereket-7
+/services/payguard-event-schemas            @bereket-7
+/services/payguard-infrastructure           @bereket-7
