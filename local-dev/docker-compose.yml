@@ -9,7 +9,6 @@
 #   docker compose -f local-dev/docker-compose.yml up -d   # direct
 #
 # Port map:
-#   Postgres — api-gateway         5432
 #   Postgres — user-service        5433
 #   Postgres — payment-service     5434
 #   Postgres — fraud-engine        5435
@@ -40,18 +39,6 @@ services:
   # ---------------------------------------------------------------------------
   # Databases — one per service (database-per-service pattern)
   # ---------------------------------------------------------------------------
-
-  db-api-gateway:
-    <<: *postgres-base
-    container_name: pg-api-gateway
-    environment:
-      POSTGRES_USER: payguard
-      POSTGRES_PASSWORD: payguard_secret
-      POSTGRES_DB: payguard_gateway
-    ports:
-      - "5432:5432"
-    volumes:
-      - pg-api-gateway:/var/lib/postgresql/data
 
   db-user-service:
     <<: *postgres-base
@@ -251,7 +238,6 @@ services:
 # =============================================================================
 
 volumes:
-  pg-api-gateway:
   pg-user-service:
   pg-payment-service:
   pg-fraud-engine:
