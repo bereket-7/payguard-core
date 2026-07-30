@@ -51,10 +51,14 @@ payguard-core/
 │   │   ├── ADR-001-polyrepo-with-submodules.md
 │   │   ├── ADR-002-python-trains-java-serves.md
 │   │   └── ADR-003-sync-payment-to-fraud-engine.md
-│   └── runbooks/                     # Operational runbooks
-│       ├── README.md                 # Index + template
-│       ├── fraud-engine-degraded.md
-│       └── kafka-consumer-lag.md
+│   ├── plans/                        # Per-service implementation plans
+│   │   ├── README.md                 # Index + template + cross-cutting gaps
+│   │   └── payguard-<service>.md     # One plan per submodule
+│   ├── runbooks/                     # Operational runbooks
+│   │   ├── README.md                 # Index + template
+│   │   ├── fraud-engine-degraded.md
+│   │   └── kafka-consumer-lag.md
+│   └── PayGuard-Architecture.html    # Interactive architecture documentation
 │
 ├── local-dev/
 │   ├── docker-compose.yml            # Full local infrastructure stack
@@ -180,6 +184,8 @@ git push
 
 | Resource | Location |
 |---|---|
+| Architecture documentation | [`docs/PayGuard-Architecture.html`](docs/PayGuard-Architecture.html) |
+| Service implementation plans | [`docs/plans/`](docs/plans/README.md) |
 | Architecture Decision Records | [`docs/adr/`](docs/adr/README.md) |
 | Ops runbooks | [`docs/runbooks/`](docs/runbooks/README.md) |
 | Contributing guide | [`CONTRIBUTING.md`](CONTRIBUTING.md) |
