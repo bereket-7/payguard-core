@@ -126,11 +126,22 @@ cd payguard-core
 ### Start the local infrastructure stack
 
 ```bash
-./scripts/local-dev.sh up       # start Postgres ×6, Redis, Kafka, Schema Registry, Kafka UI
+./scripts/local-dev.sh up       # start Postgres ×5, Redis, Kafka, Schema Registry, Kafka UI
 ./scripts/local-dev.sh down     # stop all containers
 ./scripts/local-dev.sh logs     # tail all logs
 ./scripts/local-dev.sh reset    # wipe all volumes (destructive)
 ```
+
+Default local application ports:
+
+| Service | Host |
+|---|---|
+| API Gateway | http://localhost:8090 |
+| User Service | http://localhost:8086 |
+| Payment Service | http://localhost:8082 |
+| Fraud Engine | http://localhost:8083 |
+| Notification Service | http://localhost:8084 |
+| Reconciliation Service | http://localhost:8085 |
 
 Local service endpoints after `up`:
 
@@ -140,7 +151,6 @@ Local service endpoints after `up`:
 | Schema Registry | http://localhost:8081 |
 | Kafka broker | localhost:9092 |
 | Redis | localhost:6379 |
-| Postgres — api-gateway | localhost:5432 |
 | Postgres — user-service | localhost:5433 |
 | Postgres — payment-service | localhost:5434 |
 | Postgres — fraud-engine | localhost:5435 |
