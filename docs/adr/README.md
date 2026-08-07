@@ -17,6 +17,7 @@ Every ADR follows the [MADR](https://adr.github.io/madr/) template:
 | [ADR-001](ADR-001-polyrepo-with-submodules.md) | Polyrepo with git submodules as umbrella | Accepted | 2026-07-29 |
 | [ADR-002](ADR-002-python-trains-java-serves.md) | Python trains, Java serves via ONNX | Accepted | 2026-07-29 |
 | [ADR-003](ADR-003-sync-payment-to-fraud-engine.md) | Synchronous Payment → Fraud Engine call | Accepted | 2026-07-29 |
+| [ADR-004](ADR-004-polling-outbox-relay.md) | Polling outbox relay in payment-service | Accepted | 2026-08-01 |
 
 ## Adding a new ADR
 
