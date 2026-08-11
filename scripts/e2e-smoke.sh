@@ -2,9 +2,8 @@
 # =============================================================================
 # PayGuard — End-to-end smoke test (local stack)
 #
-# Exercises the golden path: register → login → create payment (via services).
-# Requires the local infrastructure stack and running Java services, OR can
-# be extended to start services via docker compose in a future iteration.
+# Exercises the golden path: register → Keycloak token → create payment.
+# Requires the local infrastructure stack and running Java services.
 #
 # Usage:
 #   ./scripts/local-dev.sh up
@@ -18,6 +17,9 @@ GATEWAY="${PAYGUARD_GATEWAY_URL:-http://localhost:8090}"
 USER_SERVICE="${PAYGUARD_USER_SERVICE_URL:-http://localhost:8086}"
 PAYMENT_SERVICE="${PAYGUARD_PAYMENT_SERVICE_URL:-http://localhost:8082}"
 FRAUD_ENGINE="${PAYGUARD_FRAUD_ENGINE_URL:-http://localhost:8083}"
+KEYCLOAK_URL="${KEYCLOAK_URL:-http://localhost:8180}"
+KEYCLOAK_REALM="${KEYCLOAK_REALM:-payguard}"
+KEYCLOAK_CLIENT_ID="${KEYCLOAK_PUBLIC_CLIENT_ID:-payguard-public}"
 
 EMAIL="e2e-$(date +%s)@smoke.test"
 PASSWORD="SmokeTestPassw0rd!"
@@ -48,27 +50,31 @@ require_cmd curl
 require_cmd python3
 
 log "Waiting for infrastructure health endpoints..."
+wait_for "$KEYCLOAK_URL/health/ready" "keycloak" 45
 wait_for "$USER_SERVICE/actuator/health" "user-service"
 wait_for "$FRAUD_ENGINE/actuator/health" "fraud-engine"
 wait_for "$PAYMENT_SERVICE/actuator/health" "payment-service"
 
 log "Registering merchant via user-service..."
 REGISTER_STATUS=$(curl -s -o /tmp/payguard-e2e-register.json -w '%{http_code}' \
-  -X POST "$USER_SERVICE/v1/auth/register" \
+  -X POST "$USER_SERVICE/v1/merchants/register" \
   -H 'Content-Type: application/json' \
   -d "{\"merchantName\":\"$MERCHANT\",\"email\":\"$EMAIL\",\"password\":\"$PASSWORD\"}")
 [[ "$REGISTER_STATUS" == "201" ]] || fail "register returned $REGISTER_STATUS: $(cat /tmp/payguard-e2e-register.json)"
 
-log "Logging in..."
-LOGIN_BODY=$(curl -sf -X POST "$USER_SERVICE/v1/auth/login" \
-  -H 'Content-Type: application/json' \
-  -d "{\"email\":\"$EMAIL\",\"password\":\"$PASSWORD\"}")
-ACCESS_TOKEN=$(python3 - <<'PY' "$LOGIN_BODY"
+log "Obtaining access token from Keycloak..."
+TOKEN_BODY=$(curl -sf -X POST "$KEYCLOAK_URL/realms/$KEYCLOAK_REALM/protocol/openid-connect/token" \
+  -H 'Content-Type: application/x-www-form-urlencoded' \
+  -d "grant_type=password" \
+  -d "client_id=$KEYCLOAK_CLIENT_ID" \
+  -d "username=$EMAIL" \
+  -d "password=$PASSWORD")
+ACCESS_TOKEN=$(python3 - <<'PY' "$TOKEN_BODY"
 import json, sys
-print(json.loads(sys.argv[1])["accessToken"])
+print(json.loads(sys.argv[1])["access_token"])
 PY
 )
-[[ -n "$ACCESS_TOKEN" ]] || fail "login did not return accessToken"
+[[ -n "$ACCESS_TOKEN" ]] || fail "Keycloak did not return access_token"
 
 MERCHANT_ID=$(python3 - <<'PY' "$ACCESS_TOKEN"
 import base64, json, sys
