@@ -223,9 +223,21 @@ services:
       kafka-topics --bootstrap-server kafka:9093 --create --if-not-exists --topic payment.created          --partitions 3 --replication-factor 1
       kafka-topics --bootstrap-server kafka:9093 --create --if-not-exists --topic payment.completed        --partitions 3 --replication-factor 1
       kafka-topics --bootstrap-server kafka:9093 --create --if-not-exists --topic payment.failed           --partitions 3 --replication-factor 1
+      kafka-topics --bootstrap-server kafka:9093 --create --if-not-exists --topic payment.held             --partitions 3 --replication-factor 1
       kafka-topics --bootstrap-server kafka:9093 --create --if-not-exists --topic fraud.alert.high         --partitions 3 --replication-factor 1
       kafka-topics --bootstrap-server kafka:9093 --create --if-not-exists --topic fraud.alert.medium       --partitions 3 --replication-factor 1
       kafka-topics --bootstrap-server kafka:9093 --create --if-not-exists --topic reconciliation.completed --partitions 1 --replication-factor 1
+
+      # Dead-letter topics. Both the payment outbox relay and the notification consumer's
+      # DeadLetterPublishingRecoverer publish to '<topic>.dlq'; auto-creation is off on this broker,
+      # so a poisoned message would fail to be dead-lettered and stay stuck without these.
+      kafka-topics --bootstrap-server kafka:9093 --create --if-not-exists --topic payment.created.dlq      --partitions 3 --replication-factor 1
+      kafka-topics --bootstrap-server kafka:9093 --create --if-not-exists --topic payment.completed.dlq    --partitions 3 --replication-factor 1
+      kafka-topics --bootstrap-server kafka:9093 --create --if-not-exists --topic payment.failed.dlq       --partitions 3 --replication-factor 1
+      kafka-topics --bootstrap-server kafka:9093 --create --if-not-exists --topic payment.held.dlq         --partitions 3 --replication-factor 1
+      kafka-topics --bootstrap-server kafka:9093 --create --if-not-exists --topic fraud.alert.high.dlq     --partitions 3 --replication-factor 1
+      kafka-topics --bootstrap-server kafka:9093 --create --if-not-exists --topic fraud.alert.medium.dlq   --partitions 3 --replication-factor 1
+      kafka-topics --bootstrap-server kafka:9093 --create --if-not-exists --topic reconciliation.completed.dlq --partitions 1 --replication-factor 1
 
       echo 'Topics created:'
       kafka-topics --bootstrap-server kafka:9093 --list
