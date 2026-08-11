@@ -8,6 +8,7 @@ Operational runbooks for the PayGuard platform. Each runbook covers a specific i
 |---|---|
 | [fraud-engine-degraded.md](fraud-engine-degraded.md) | Fraud Engine slow / circuit breaker open |
 | [kafka-consumer-lag.md](kafka-consumer-lag.md) | Kafka consumer group falling behind |
+| [keycloak-degraded.md](keycloak-degraded.md) | Keycloak unavailable — login blocked, existing JWTs valid until expiry |
 
 ## Adding a runbook
 
