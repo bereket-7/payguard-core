@@ -18,6 +18,7 @@ Every ADR follows the [MADR](https://adr.github.io/madr/) template:
 | [ADR-002](ADR-002-python-trains-java-serves.md) | Python trains, Java serves via ONNX | Accepted | 2026-07-29 |
 | [ADR-003](ADR-003-sync-payment-to-fraud-engine.md) | Synchronous Payment → Fraud Engine call | Accepted | 2026-07-29 |
 | [ADR-004](ADR-004-polling-outbox-relay.md) | Polling outbox relay in payment-service | Accepted | 2026-08-01 |
+| [ADR-005](ADR-005-keycloak-hybrid-auth.md) | Keycloak hybrid authentication | Accepted | 2026-08-11 |
 
 ## Adding a new ADR
 
