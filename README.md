@@ -196,10 +196,21 @@ git push
 |---|---|
 | Architecture documentation | [`docs/PayGuard-Architecture.html`](docs/PayGuard-Architecture.html) |
 | Service implementation plans | [`docs/plans/`](docs/plans/README.md) |
+| **Gap remediation plan** | [`docs/plans/gap-remediation-plan.md`](docs/plans/gap-remediation-plan.md) |
 | Architecture Decision Records | [`docs/adr/`](docs/adr/README.md) |
 | Ops runbooks | [`docs/runbooks/`](docs/runbooks/README.md) |
 | Contributing guide | [`CONTRIBUTING.md`](CONTRIBUTING.md) |
 | Local env var reference | [`local-dev/.env.example`](local-dev/.env.example) |
+
+### Verification
+
+| Check | Command |
+|---|---|
+| Submodule health | `./scripts/status.sh` |
+| Local infrastructure | `./scripts/local-dev.sh up` |
+| ML feature contract | `./scripts/verify-ml-contract.sh` |
+| End-to-end smoke (services running) | `./scripts/e2e-smoke.sh` |
+| Full platform CI (GitHub Actions) | `.github/workflows/platform-ci.yml` |
 
 ---
 
