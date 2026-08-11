@@ -10,9 +10,9 @@
 
 ## 1. Purpose and boundaries
 
-**Owns:** identity. Merchant records, dashboard user accounts, credentials, roles, and the issuance of the JWTs that the rest of the platform trusts.
+**Owns:** merchant domain data — merchant records, dashboard user accounts, roles, invites, and internal notification preference APIs. Orchestrates Keycloak user provisioning on register/invite/role change.
 
-**Does not own:** validating those tokens for other services (each service validates independently), API-level rate limiting (gateway), or any payment or fraud data.
+**Does not own:** login, refresh, logout, JWT signing, or JWKS (Keycloak per [ADR-005](../adr/ADR-005-keycloak-hybrid-auth.md)). Token validation for other services (each service validates independently), API-level rate limiting (gateway), or any payment or fraud data.
 
 The critical output of this service is not an endpoint — it is a **token format**. Once `merchant_id` and roles are baked into a claim set that five services read, changing it is a coordinated platform migration. So the claim contract deserves more design attention than the CRUD around it.
 
