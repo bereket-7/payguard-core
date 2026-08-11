@@ -18,6 +18,8 @@
 #   Kafka (broker)                 9092
 #   Kafka Schema Registry          8081
 #   Kafka UI                       8080  → http://localhost:8080
+#   Keycloak (OIDC / JWKS)         8180  → http://localhost:8180
+#   Postgres — keycloak            5438
 # =============================================================================
 
 name: payguard-local
@@ -99,6 +101,51 @@ services:
       - "5437:5432"
     volumes:
       - pg-reconciliation-service:/var/lib/postgresql/data
+
+  db-keycloak:
+    <<: *postgres-base
+    container_name: pg-keycloak
+    environment:
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: keycloak_secret
+      POSTGRES_DB: keycloak
+    ports:
+      - "5438:5432"
+    volumes:
+      - pg-keycloak:/var/lib/postgresql/data
+
+  # ---------------------------------------------------------------------------
+  # Keycloak — OIDC identity provider (JWT issuance + JWKS)
+  # ---------------------------------------------------------------------------
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0.7
+    container_name: keycloak
+    restart: unless-stopped
+    depends_on:
+      db-keycloak:
+        condition: service_healthy
+    command: start-dev --import-realm --http-port=8180
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://db-keycloak:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: keycloak_secret
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_HTTP_PORT: 8180
+      KC_HOSTNAME_STRICT: false
+      KC_HEALTH_ENABLED: true
+    ports:
+      - "8180:8180"
+    volumes:
+      - ./keycloak:/opt/keycloak/data/import
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/8180 && echo -e 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\n\\r\\n' >&3 && cat <&3 | grep -q UP"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
 
   # ---------------------------------------------------------------------------
   # Redis — feature & score cache for the Fraud Engine
@@ -255,5 +302,6 @@ volumes:
   pg-fraud-engine:
   pg-notification-service:
   pg-reconciliation-service:
+  pg-keycloak:
   redis-data:
   kafka-data:
