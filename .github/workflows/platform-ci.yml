@@ -1,0 +1,158 @@
+name: Platform CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  event-schemas:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/payguard-event-schemas
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      - run: mvn -B verify
+
+  fraud-engine:
+    needs: event-schemas
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/payguard-fraud-engine
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      - name: Install event-schemas
+        run: mvn -B -f ../payguard-event-schemas/pom.xml install -DskipTests
+      - run: mvn -B verify
+
+  payment-service:
+    needs: event-schemas
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/payguard-payment-service
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      - name: Install event-schemas
+        run: mvn -B -f ../payguard-event-schemas/pom.xml install -DskipTests
+      - run: mvn -B verify
+
+  user-service:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/payguard-user-service
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      - run: mvn -B verify
+
+  api-gateway:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/payguard-api-gateway
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      - run: mvn -B verify
+
+  notification-service:
+    needs: event-schemas
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/payguard-notification-service
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      - name: Install event-schemas
+        run: mvn -B -f ../payguard-event-schemas/pom.xml install -DskipTests
+      - run: mvn -B verify
+
+  reconciliation-service:
+    needs: event-schemas
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/payguard-reconciliation-service
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      - name: Install event-schemas
+        run: mvn -B -f ../payguard-event-schemas/pom.xml install -DskipTests
+      - run: mvn -B verify
+
+  fraud-model-training:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/payguard-fraud-model-training
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+      - run: pip install -r requirements.txt -r requirements-dev.txt
+      - run: pytest -q
+
+  ml-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Verify feature contract alignment
+        run: ./scripts/verify-ml-contract.sh
