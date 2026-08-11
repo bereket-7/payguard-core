@@ -41,6 +41,9 @@ case "$CMD" in
     echo "  Kafka                         : localhost:9092"
     echo "  Kafka Schema Registry         : localhost:8081"
     echo "  Kafka UI                      : http://localhost:8080"
+    echo "  Keycloak (OIDC / JWKS)        : http://localhost:8180"
+    echo "  Keycloak admin console        : http://localhost:8180/admin (admin / admin)"
+    echo "  Postgres (keycloak)           : localhost:5438"
     ;;
   down)
     info "Stopping local infrastructure stack..."
