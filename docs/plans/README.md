@@ -10,6 +10,7 @@ Plans live in this umbrella repo — not inside the submodules — so a plan can
 
 | Plan | Repo | Language | Critical path |
 |---|---|---|---|
+| [**Gap remediation (platform)**](gap-remediation-plan.md) | `payguard-core` + all submodules | — | CI, tests, E2E, docs, K8s |
 | [payguard-event-schemas](payguard-event-schemas.md) | `payguard-event-schemas` | Avro | Blocks all producers/consumers |
 | [payguard-fraud-engine](payguard-fraud-engine.md) | `payguard-fraud-engine` | Java | Yes |
 | [payguard-payment-service](payguard-payment-service.md) | `payguard-payment-service` | Java | Yes |
@@ -102,7 +103,23 @@ Copy this into a new file named `payguard-<service>.md` and add a row to the ind
 
 ## Cross-cutting gaps
 
-Found while auditing the submodules against the architecture doc. Each is owned by a specific plan rather than fixed centrally, so nothing here is orphaned.
+> **Active remediation plan:** [gap-remediation-plan.md](gap-remediation-plan.md) — step-by-step PRs for CI, tests, E2E, ML contract gates, docs sync, and K8s completeness. **Implemented 2026-08-11** — see plan §11 for remaining optional items (event-schemas GitHub Packages publish, Testcontainers integration tests).
+
+The items below were found during the July 2026 audit. **Most are now fixed.** Remaining optional work is tracked in the gap remediation plan.
+
+### Resolved (2026-08-11)
+
+- Local port collisions — gateway on 8090, user-service on 8086
+- Wrong Fraud Engine URL in `.env.example` — corrected to 8083
+- `payment.failed` / `payment.held` Avro schemas — present in event-schemas
+- Per-service CI — all submodules + umbrella `platform-ci.yml` matrix
+- Java dependencies — full stack in service `pom.xml` files
+- Terraform HCL syntax — fixed in `variables.tf`
+- Outbox relay — ADR-004 polling relay implemented
+- Dockerfiles — multi-stage, non-root (uid 10001) across Java services
+- K8s manifests — all six Java services have hardened base manifests
+
+### Historical notes (July 2026 audit)
 
 ### Local port collisions
 
