@@ -206,7 +206,7 @@ ci: add submodule sync check to PR workflow
 
 ## Working with the local dev stack
 
-The `local-dev/docker-compose.yml` starts all infrastructure dependencies (Postgres × 6, Redis, Kafka, Schema Registry, Kafka UI). Services themselves run locally via `mvn spring-boot:run` or your IDE.
+The `local-dev/docker-compose.yml` starts all infrastructure dependencies (Postgres × 6, Redis, Kafka, Schema Registry, Kafka UI, Keycloak). Services themselves run locally via `mvn spring-boot:run` or your IDE.
 
 ```bash
 # Start everything
@@ -234,6 +234,8 @@ Port reference:
 | Postgres — fraud-engine | 5435 |
 | Postgres — notification | 5436 |
 | Postgres — reconciliation | 5437 |
+| Postgres — keycloak | 5438 |
+| Keycloak (OIDC / JWKS) | http://localhost:8180 |
 | Redis | 6379 |
 | Kafka | 9092 |
 | Schema Registry | 8081 |
