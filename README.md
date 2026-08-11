@@ -11,7 +11,7 @@ All services and supporting repositories are registered here as git submodules. 
 | Submodule | Language | Description |
 |---|---|---|
 | `payguard-api-gateway` | Java | Spring Cloud Gateway — edge routing, rate limiting, JWT pre-validation |
-| `payguard-user-service` | Java | Registration, OAuth2/JWT issuance, merchant profiles, RBAC |
+| `payguard-user-service` | Java | Merchant domain, user invites, Keycloak user provisioning |
 | `payguard-payment-service` | Java | Stripe integration, charges, refunds, webhook processing, outbox publisher |
 | `payguard-fraud-engine` | Java | Real-time ONNX model scoring with rules-engine fallback |
 | `payguard-notification-service` | Java | Kafka consumer — email/SMS delivery for alerts and reports |
@@ -126,7 +126,7 @@ cd payguard-core
 ### Start the local infrastructure stack
 
 ```bash
-./scripts/local-dev.sh up       # start Postgres ×5, Redis, Kafka, Schema Registry, Kafka UI
+./scripts/local-dev.sh up       # start Postgres ×6, Redis, Kafka, Schema Registry, Kafka UI, Keycloak
 ./scripts/local-dev.sh down     # stop all containers
 ./scripts/local-dev.sh logs     # tail all logs
 ./scripts/local-dev.sh reset    # wipe all volumes (destructive)
@@ -147,6 +147,8 @@ Local service endpoints after `up`:
 
 | Service | Host |
 |---|---|
+| Keycloak (OIDC / JWKS) | http://localhost:8180 |
+| Keycloak admin console | http://localhost:8180/admin (admin / admin) |
 | Kafka UI | http://localhost:8080 |
 | Schema Registry | http://localhost:8081 |
 | Kafka broker | localhost:9092 |
@@ -156,6 +158,15 @@ Local service endpoints after `up`:
 | Postgres — fraud-engine | localhost:5435 |
 | Postgres — notification | localhost:5436 |
 | Postgres — reconciliation | localhost:5437 |
+| Postgres — keycloak | localhost:5438 |
+
+### Authentication flow (local)
+
+1. Register a merchant: `POST http://localhost:8086/v1/merchants/register`
+2. Obtain a token from Keycloak: `POST http://localhost:8180/realms/payguard/protocol/openid-connect/token` (password grant, client `payguard-public`)
+3. Call protected APIs with `Authorization: Bearer <token>` via gateway (`8090`) or directly
+
+See [ADR-005](docs/adr/ADR-005-keycloak-hybrid-auth.md) for the hybrid Keycloak + user-service split.
 
 ### Work on a service
 
