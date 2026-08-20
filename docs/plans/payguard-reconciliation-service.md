@@ -1,10 +1,10 @@
 # Implementation Plan: payguard-reconciliation-service
 
 **Owner:** @bereket-7
-**Status:** Draft
-**Last updated:** 2026-07-29
+**Status:** Mostly complete
+**Last updated:** 2026-08-20
 **Repo:** github.com/bereket-7/payguard-reconciliation-service
-**Depends on:** `payguard-event-schemas` (M3), `payguard-payment-service` (M4 — the outbox must be publishing reliably), Stripe payout access
+**Depends on:** `payguard-event-schemas`, `payguard-payment-service` outbox publishing, Stripe payout access
 
 ---
 
@@ -20,19 +20,22 @@ This is the only service whose correctness is judged by an auditor rather than a
 
 ## 2. Current state
 
-- [`ReconciliationServiceApplication.java`](../../services/payguard-reconciliation-service/src/main/java/com/payguard/reconciliation/ReconciliationServiceApplication.java) — bare `@SpringBootApplication`.
-- [`application.yml`](../../services/payguard-reconciliation-service/src/main/resources/application.yml) — app name and `server.port: 8085`.
-- `pom.xml` — `web`, `actuator`, `test`. No Stripe SDK, no JPA, no Kafka, no batch.
-- `Dockerfile` — single stage, root user.
-- A `target/` directory exists, so this repo has been built locally at least once. It is gitignored.
+*(Surveyed 2026-08-20 against the submodule HEAD.)*
 
-Nothing else exists: no matching engine, no payout ingestion, no scheduler.
+**Implemented (M1–M5 largely done; M6 partial):**
 
-Pre-existing expectations to honour:
+- Port **8085**; Flyway V1–V3 (ledger, run lock, outbox)
+- Ledger from payment events; `MatchingEngine`; Stripe payout ingest; scheduled/manual runs with lock (`ReconciliationLockService`)
+- Controllers: `RunController`, `InternalRunController`; reporting/discrepancy path
+- Outbox + Avro `reconciliation.completed` publisher; Kafka consumer group `reconciliation-service`
+- Auth: Keycloak JWT + internal token for `/internal/**`
+- Unit test: `MatchingEngineTest`; CI + multi-stage non-root Dockerfile
 
-- [`docs/runbooks/kafka-consumer-lag.md`](../runbooks/kafka-consumer-lag.md) names the consumer group **`reconciliation-service`** and lists it as a consumer of `payment.created` and `payment.completed`. It also flags that lag spanning a settlement window (over 24 hours) means notifying the finance team.
-- `reconciliation.completed` is created with **1 partition**, unlike the 3-partition payment topics — a deliberate choice consistent with one settlement outcome per run rather than per transaction.
-- The architecture doc describes two inputs: the Stripe payout file, and a replay of `payment.completed` events to build the expected set.
+**Remaining:**
+
+- Thin automated coverage beyond matching unit tests
+- Not routed via API gateway (admin path is network-restricted / direct)
+- Refund / dispute handling (M6) and full Stripe payout E2E still open
 
 ---
 
