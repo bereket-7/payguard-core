@@ -4,37 +4,40 @@ overview: Author nine senior-level implementation plan documents (one per PayGua
 todos:
   - id: index
     content: Create docs/plans/README.md with the index, shared plan template, build-order diagram, and the cross-cutting gaps list
-    status: pending
+    status: completed
   - id: schemas
     content: Write docs/plans/payguard-event-schemas.md (add payment.failed schema, Maven artifact publishing, registry compatibility CI)
-    status: pending
+    status: completed
   - id: fraud-engine
     content: Write docs/plans/payguard-fraud-engine.md (rules fallback, Redis features, ONNX scoring, model-version tagging)
-    status: pending
+    status: completed
   - id: payment-service
     content: Write docs/plans/payguard-payment-service.md (Stripe charges, webhooks, outbox relay, Resilience4j circuit breaker)
-    status: pending
+    status: completed
   - id: user-service
     content: Write docs/plans/payguard-user-service.md (merchants, RBAC, OAuth2/JWT issuance)
-    status: pending
+    status: completed
   - id: api-gateway
     content: Write docs/plans/payguard-api-gateway.md (routes, Redis rate limiting, JWT pre-validation, port conflict fix)
-    status: pending
+    status: completed
   - id: notification
     content: Write docs/plans/payguard-notification-service.md (idempotent consumers, DLQ, email/SMS delivery)
-    status: pending
+    status: completed
   - id: reconciliation
     content: Write docs/plans/payguard-reconciliation-service.md (payout ingest, settlement matching, discrepancy reporting)
-    status: pending
+    status: completed
   - id: training
     content: Write docs/plans/payguard-fraud-model-training.md (feature contract, training, evaluation gates, ONNX export, S3 publish)
-    status: pending
+    status: completed
   - id: infrastructure
     content: Write docs/plans/payguard-infrastructure.md (remote state, VPC, EKS/RDS/MSK/ElastiCache/S3, Kustomize overlays, HPA, CI coverage)
-    status: pending
+    status: completed
   - id: link-readme
     content: Add Service implementation plans and Architecture documentation rows to the Documentation table in README.md
-    status: pending
+    status: completed
+  - id: refresh-current-state
+    content: Refresh all nine plan §2 Current state sections and Status fields to match submodule HEAD (2026-08-20)
+    status: completed
 isProject: false
 ---
 
