@@ -1,10 +1,10 @@
 # Implementation Plan: payguard-infrastructure
 
 **Owner:** @bereket-7
-**Status:** Draft
-**Last updated:** 2026-07-29
+**Status:** In progress
+**Last updated:** 2026-08-20
 **Repo:** github.com/bereket-7/payguard-infrastructure
-**Depends on:** an AWS account with an agreed region and account structure — currently the blocker for everything past M1
+**Depends on:** an AWS account with an agreed region and account structure — still the blocker for apply / prod cutover
 
 ---
 
@@ -20,25 +20,23 @@ This repo is the only deploy blocker in the platform: every other plan can reach
 
 ## 2. Current state
 
-Structure is laid out correctly; content is almost entirely placeholders.
+*(Surveyed 2026-08-20 against the submodule HEAD.)*
 
-- [`terraform/eks/main.tf`](../../services/payguard-infrastructure/terraform/eks/main.tf) — a `terraform { required_version = ">= 1.8.0" }` block plus a comment noting EKS resources come after account, VPC, and remote-state configuration. That sequencing note is right.
-- [`terraform/eks/variables.tf`](../../services/payguard-infrastructure/terraform/eks/variables.tf) — two variables, and the second is **likely invalid HCL**:
+**Implemented (M1–M4 largely done; M5–M7 open):**
 
-```hcl
-variable "region" { type = string, default = "us-east-1" }
-```
+- Terraform: `bootstrap/`, `modules/{vpc,s3-model-registry}/`, `eks/`, `rds/`, `msk/` (+ ACLs), `elasticache/`, `envs/dev/`
+- CI: `terraform-plan.yml`, `terraform-apply.yml` (apply still gated / needs real OIDC + state)
+- Kustomize bases for all six Java services + Keycloak; overlays `dev` / `prod`
+- Payment-service has HPA + PDB + Service; network policies (default-deny, gateway→core, payment→fraud, Keycloak access)
+- HCL syntax issues from the July audit are fixed; modules contain real resources (not comment stubs)
 
-  HCL requires a newline between arguments inside a block, not a comma. Since [`terraform-plan.yml`](../../services/payguard-infrastructure/.github/workflows/terraform-plan.yml) runs `terraform validate` against this module, CI should already be failing. Verify first — if it passes, the assumption is wrong and nothing needs changing.
+**Remaining:**
 
-- [`terraform/rds/main.tf`](../../services/payguard-infrastructure/terraform/rds/main.tf), [`msk/main.tf`](../../services/payguard-infrastructure/terraform/msk/main.tf), [`elasticache/main.tf`](../../services/payguard-infrastructure/terraform/elasticache/main.tf) — single comment lines, no resources. There is no `s3` module at all, though the architecture doc and ADR-002 both require an S3 model registry.
-- [`k8s/base/deployment.yml`](../../services/payguard-infrastructure/k8s/base/deployment.yml) — one generic `payguard-service` Deployment: 2 replicas, `image: REPLACE_AT_DEPLOY`, a readiness probe on `/actuator/health`. No resource requests or limits, no liveness probe, no `securityContext`, and only an `app` label where `CONTRIBUTING.md` requires `app`, `component`, and `version`.
-- [`k8s/base/service.yml`](../../services/payguard-infrastructure/k8s/base/service.yml) — matching generic Service.
-- [`k8s/overlays/prod/kustomization.yml`](../../services/payguard-infrastructure/k8s/overlays/prod/kustomization.yml) — references `../../base` and nothing else. No per-service overlays, no image tags, no environment differentiation.
-- [`terraform-plan.yml`](../../services/payguard-infrastructure/.github/workflows/terraform-plan.yml) — `init -backend=false` and `validate`, **only for the `eks` module**. The other three are unvalidated.
-- [`terraform-apply.yml`](../../services/payguard-infrastructure/.github/workflows/terraform-apply.yml) — `workflow_dispatch` with a production environment gate, and a step that just echoes "Configure remote state and apply approval before enabling this workflow." Honest, and correctly disabled.
-
-Also missing platform-wide: no remote state backend, no VPC module, no Schema Registry (MSK does not include one, and every service is configured with `SPRING_KAFKA_PROPERTIES_SCHEMA_REGISTRY_URL`), no `NetworkPolicy`, no HPA, no secrets integration, no ingress or TLS.
+- No confirmed AWS account/region; no production Terraform env parity with k8s prod overlay
+- M5 secrets / ingress / TLS; M6 deploy+rollback pipeline; M7 observability stack
+- Schema Registry as a first-class AWS dependency still a risk ("worked locally, broke in prod")
+- mTLS Payment→Fraud undecided (mesh vs certs); Service/HPA/PDB incomplete for non-payment apps
+- Legacy generic `k8s/base/deployment.yml` may still exist alongside per-service bases
 
 ---
 
