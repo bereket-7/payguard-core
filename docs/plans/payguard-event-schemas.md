@@ -1,8 +1,8 @@
 # Implementation Plan: payguard-event-schemas
 
 **Owner:** @bereket-7
-**Status:** Draft
-**Last updated:** 2026-07-29
+**Status:** Mostly complete
+**Last updated:** 2026-08-20
 **Repo:** github.com/bereket-7/payguard-event-schemas
 **Depends on:** nothing — this is the root of the dependency graph
 
@@ -20,20 +20,20 @@ This repo is deliberately the smallest and most stable in the platform. A change
 
 ## 2. Current state
 
-Four schemas exist, each a single-line JSON file:
+*(Surveyed 2026-08-20 against the submodule HEAD.)*
 
-- `schemas/payment/payment-created.avsc` — `PaymentCreated`: `event_id`, `transaction_id`, `merchant_id`, `amount_minor`, `currency`, `occurred_at`
-- `schemas/payment/payment-completed.avsc` — `PaymentCompleted`: `event_id`, `transaction_id`, `merchant_id`, `stripe_charge_id`, `occurred_at`
-- `schemas/fraud/fraud-alert.avsc` — `FraudAlert`: `event_id`, `transaction_id`, `merchant_id`, `score`, `decision`, `reasons` (array of string), `occurred_at`
-- `schemas/reconciliation/reconciliation-completed.avsc` — `ReconciliationCompleted`: `event_id`, `settlement_id`, `merchant_id`, `match_status`, `discrepancy_count`, `occurred_at`
+**Implemented (M1–M3 largely done):**
 
-Gaps:
+- Avro schemas: `payment-created`, `payment-completed`, `payment-failed`, `payment-held`, `fraud-alert`, `reconciliation-completed`
+- Maven artifact `com.payguard:event-schemas:0.1.0-SNAPSHOT` with avro-maven-plugin code generation
+- Tests: `CompatibilityTest`, `PartitionKeyTest`, `SchemaParsesTest` plus golden fixtures under `src/test/resources/golden/`
+- CI: `.github/workflows/ci.yml` (`mvn verify`); `release.yml` targets GitHub Packages via `distributionManagement`
 
-- **`payment.failed` has no schema.** The topic is created by `kafka-init` with 3 partitions and is documented in the architecture doc as carrying `transaction_id` and a failure reason, but no `.avsc` exists.
-- **No build.** There is no `pom.xml`, so services cannot depend on this repo. Every consumer would have to hand-write matching Java classes, which defeats the purpose of a shared contract library.
-- **No compatibility enforcement.** Nothing prevents a field being removed or renamed.
-- **Timestamps are strings.** `occurred_at` is `string` everywhere rather than Avro's `timestamp-millis` logical type.
-- **No `merchant_id` on the record used as partition key.** It is present, which is correct — the architecture doc requires `merchant_id` as the Kafka partition key for tenant isolation. Worth asserting in a test so it is never dropped.
+**Remaining:**
+
+- Still published as SNAPSHOT locally / sibling-checkout for CI; tagged GitHub Packages consumption not universal across consumers
+- No live Schema Registry compatibility gate in CI (golden/local Avro only)
+- M4 (logical types / enums as breaking v2 subjects) deferred until dual-publish window is planned
 
 ---
 
