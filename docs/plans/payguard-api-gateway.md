@@ -1,10 +1,10 @@
 # Implementation Plan: payguard-api-gateway
 
 **Owner:** @bereket-7
-**Status:** Draft
-**Last updated:** 2026-07-29
+**Status:** Mostly complete
+**Last updated:** 2026-08-20
 **Repo:** github.com/bereket-7/payguard-api-gateway
-**Depends on:** `payguard-user-service` (M3, for the JWT contract), `payguard-payment-service` (M1, to have something to route to), Redis from the local stack
+**Depends on:** Keycloak JWKS, `payguard-user-service`, `payguard-payment-service`, Redis from the local stack
 
 ---
 
@@ -20,20 +20,23 @@ The failure mode to design against is scope creep. A gateway that starts making 
 
 ## 2. Current state
 
-The most complete scaffold of the six Java services, though still non-functional:
+*(Surveyed 2026-08-20 against the submodule HEAD.)*
 
-- [`GatewayApplication.java`](../../services/payguard-api-gateway/src/main/java/com/payguard/gateway/GatewayApplication.java) — bare `@SpringBootApplication`.
-- [`application.yml`](../../services/payguard-api-gateway/src/main/resources/application.yml) — `spring.cloud.gateway.routes: []` with a comment to add routes, and actuator exposing `health,info`. **No `server.port`.**
-- [`pom.xml`](../../services/payguard-api-gateway/pom.xml) — the only service with real dependency work done: `spring-cloud-starter-gateway-server-webflux`, actuator, and the Spring Cloud BOM `2024.0.0` against Spring Boot 3.4.3.
-- `README.md` — documents `mvn spring-boot:run` and correctly states that domain services stay private.
-- `Dockerfile` — single stage, root user.
+**Implemented (M1–M4 largely done):**
 
-Two issues:
+- Port **8090** (avoids Kafka UI on 8080)
+- Routes: user (`/v1/merchants/**`, `/v1/users/**` → `:8086`), payment (`/v1/payments/**`, `/v1/transactions/**`, `/v1/webhooks/stripe` → `:8082`); `/internal/**` not routed
+- Filters: correlation ID, edge protection, merchant context, Redis tier rate limiting
+- Auth: reactive Keycloak JWT validation; register + Stripe webhook + health permitAll
+- Optional TLS and Zipkin tracing via env; `GatewayRoutingIntegrationTest`; CI + Dockerfile
 
-- **Port collision.** With no `server.port`, Spring Boot binds **8080**, which Kafka UI already occupies in [`local-dev/docker-compose.yml`](../../local-dev/docker-compose.yml). The gateway fails to start against the local stack.
-- **An unexplained database.** The local stack provisions `db-api-gateway` on 5432 with database `payguard_gateway`, but the architecture doc shows the gateway with no data store. Spring Cloud Gateway's `RequestRateLimiter` uses **Redis**, not Postgres. Either the Postgres instance is vestigial and should be removed from the compose file, or there is an intent for it that is undocumented. This plan treats it as vestigial.
+**Remaining:**
 
-Note the gateway is WebFlux-based. Everything written here must be non-blocking; a blocking call in a filter will stall the event loop under load.
+- README may still mention stale user-service URI defaults — trust `application.yml` (`8086`)
+- Production edge hardening (M5): stricter TLS defaults, aggregated OpenAPI, deeper resilience tests
+- Single integration test; no full load/rate-limit soak in CI
+
+Note: the gateway is WebFlux-based. Filters must stay non-blocking.
 
 ---
 
