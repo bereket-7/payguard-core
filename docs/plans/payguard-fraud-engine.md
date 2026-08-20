@@ -1,10 +1,10 @@
 # Implementation Plan: payguard-fraud-engine
 
 **Owner:** @bereket-7
-**Status:** Draft
-**Last updated:** 2026-07-29
+**Status:** Mostly complete
+**Last updated:** 2026-08-20
 **Repo:** github.com/bereket-7/payguard-fraud-engine
-**Depends on:** `payguard-event-schemas` (M3), Redis and Kafka from the local stack, `payguard-fraud-model-training` for the ONNX artifact (M4 only)
+**Depends on:** `payguard-event-schemas`, Redis and Kafka from the local stack, `payguard-fraud-model-training` for a production ONNX artifact
 
 ---
 
@@ -20,17 +20,23 @@ This is the only service that is called synchronously by another service, and th
 
 ## 2. Current state
 
-Almost nothing is implemented:
+*(Surveyed 2026-08-20 against the submodule HEAD.)*
 
-- [`FraudEngineApplication.java`](../../services/payguard-fraud-engine/src/main/java/com/payguard/fraud/FraudEngineApplication.java) — a one-line `@SpringBootApplication`.
-- [`RulesFallbackEngine.java`](../../services/payguard-fraud-engine/src/main/java/com/payguard/fraud/scoring/RulesFallbackEngine.java) — an empty `final` class with a private constructor. The Javadoc states its intent ("Conservative fallback used when model inference cannot complete in budget") but there is no logic.
-- [`application.yml`](../../services/payguard-fraud-engine/src/main/resources/application.yml) — sets the app name, `server.port: 8083`, and `payguard.model-uri` defaulting to `s3://payguard-models/fraud/current.onnx`.
-- `pom.xml` — Spring Boot 3.4.3, Java 17, and only `web`, `actuator`, `test`. No `onnxruntime`, no Redis, no Kafka, no JPA.
-- `Dockerfile` — single stage, `eclipse-temurin:17-jre`, copies `target/fraud-engine-*.jar`, runs as root.
+**Implemented (M1–M6 largely done):**
 
-Not present, though the architecture doc lists them: `OnnxScoringService`, `ScoreController`, `FeatureCacheClient`, and `src/main/resources/models/fraud-model-v3.onnx`.
+- Port **8083**; Postgres Flyway `V1__scored_transaction.sql`
+- Scoring path: `RulesFallbackEngine`, `FeatureCacheClient` (Redis), `OnnxScoringService`, `OnnxModelRegistry` (hot reload), `ScoringService`, `ScoringAuditService`
+- API: `POST /internal/v1/score`, `POST /internal/v1/model/reload`
+- Auth: `InternalServiceTokenFilter` — `/internal/**` requires `PAYGUARD_INTERNAL_SERVICE_TOKEN`
+- Kafka: `FraudAlertProducer` publishes Avro `FraudAlert` via Schema Registry
+- Tests for scoring / controller; CI + multi-stage non-root Dockerfile
 
-Consequential detail: [`docs/runbooks/fraud-engine-degraded.md`](../runbooks/fraud-engine-degraded.md) already tells an on-call engineer to curl `/actuator/metrics/resilience4j.circuitbreaker.state` and to expect `OrtException` in the logs. The runbook is ahead of the code, so M1 and M4 should make those instructions true.
+**Remaining:**
+
+- Default `classpath:models/fraud.onnx` may be absent → rules fallback in practice until a trained model is published
+- No Testcontainers coverage of score → Kafka alert path
+- Feature cache is read-only; population of Redis feature keys lives outside this service
+- mTLS on the Payment → Fraud hop (ADR-003) is still an infra concern
 
 ---
 
