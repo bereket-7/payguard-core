@@ -1,8 +1,8 @@
 # Implementation Plan: Platform Gap Remediation
 
 **Owner:** @bereket-7
-**Status:** In progress
-**Last updated:** 2026-08-11
+**Status:** Mostly complete
+**Last updated:** 2026-08-20
 **Scope:** Cross-cutting gaps across all PayGuard submodules
 **Depends on:** Existing service implementations (see per-service plans in this directory)
 
@@ -863,7 +863,7 @@ This plan is **Complete** when all checkboxes below are checked:
 - [ ] ONNX JVM parity test in CI (optional follow-up)
 
 ### Docs
-- [ ] All per-service plan §2 sections updated
+- [x] All per-service plan §2 sections updated (2026-08-20)
 - [x] `docs/plans/README.md` cross-cutting gaps refreshed
 - [x] Root README links verification paths
 
