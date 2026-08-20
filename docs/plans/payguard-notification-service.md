@@ -1,10 +1,10 @@
 # Implementation Plan: payguard-notification-service
 
 **Owner:** @bereket-7
-**Status:** Draft
-**Last updated:** 2026-07-29
+**Status:** Mostly complete
+**Last updated:** 2026-08-20
 **Repo:** github.com/bereket-7/payguard-notification-service
-**Depends on:** `payguard-event-schemas` (M3), merchant notification preferences from `payguard-user-service` (M4)
+**Depends on:** `payguard-event-schemas`, merchant notification preferences from `payguard-user-service`
 
 ---
 
@@ -20,18 +20,22 @@ This service consumes from all six topics, making it the widest consumer in the 
 
 ## 2. Current state
 
-- [`NotificationServiceApplication.java`](../../services/payguard-notification-service/src/main/java/com/payguard/notification/NotificationServiceApplication.java) — bare `@SpringBootApplication`.
-- [`application.yml`](../../services/payguard-notification-service/src/main/resources/application.yml) — app name and `server.port: 8084`.
-- `pom.xml` — `web`, `actuator`, `test`. No Kafka, no JPA, no mail.
-- `Dockerfile` — single stage, root user.
+*(Surveyed 2026-08-20 against the submodule HEAD.)*
 
-No consumers, entities, or delivery code exist.
+**Implemented (M1–M4 largely done; M5 partial):**
 
-Relevant pre-existing expectations to satisfy rather than invent:
+- Port **8084**; Flyway `V1__notification.sql`; consumer group `notification-service`
+- Kafka consumers for payment, fraud-alert, and reconciliation events (Avro); DLQ replay endpoint under `/internal/v1/dlq/...`
+- Channels: `EmailChannel` (non-local), `NoOpChannel` (local); Thymeleaf templates including `payment-held`
+- `PreferenceService` fetches preferences from user-service with internal token; query API `GET /v1/notifications`
+- Auth: Keycloak JWT + internal token for `/internal/**`
+- Unit tests for notification/template services; CI + multi-stage non-root Dockerfile
 
-- [`docs/runbooks/kafka-consumer-lag.md`](../runbooks/kafka-consumer-lag.md) specifies the consumer group name **`notification-service`** and lists it as a consumer of all six topics. It also states in Scenario D that "the consumer should be sending unprocessable messages to a dead-letter topic" — so a DLQ is a requirement, not an enhancement.
-- The runbook's `kubectl scale --replicas=3` guidance assumes the deployment scales horizontally and that 3 is the effective ceiling, matching the 3 partitions created for the payment and fraud topics.
-- The architecture doc's `.env.example` has no SMTP or SMS credentials yet; those need adding.
+**Remaining:**
+
+- No SMS (or other) channel despite preference flags
+- No consumer/DLQ integration tests
+- Delivery retries / provider abstraction beyond email/NoOp still thin
 
 ---
 
