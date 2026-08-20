@@ -1,10 +1,10 @@
 # Implementation Plan: payguard-payment-service
 
 **Owner:** @bereket-7
-**Status:** Draft
-**Last updated:** 2026-07-29
+**Status:** Mostly complete
+**Last updated:** 2026-08-20
 **Repo:** github.com/bereket-7/payguard-payment-service
-**Depends on:** `payguard-event-schemas` (M3), `payguard-fraud-engine` (M1 — needs a live scoring endpoint), a Stripe test account
+**Depends on:** `payguard-event-schemas`, `payguard-fraud-engine`, Keycloak JWKS, a Stripe test account
 
 ---
 
@@ -20,18 +20,23 @@ This service holds the most consequential correctness requirement in the platfor
 
 ## 2. Current state
 
-- [`PaymentServiceApplication.java`](../../services/payguard-payment-service/src/main/java/com/payguard/payment/PaymentServiceApplication.java) — bare `@SpringBootApplication`.
-- [`OutboxEntry.java`](../../services/payguard-payment-service/src/main/java/com/payguard/payment/outbox/OutboxEntry.java) — a record with `eventId`, `aggregateId`, `eventType`, `payload`. Correct shape, but it is a plain record, not a JPA entity, and nothing writes or reads it.
-- [`application.yml`](../../services/payguard-payment-service/src/main/resources/application.yml) — app name and `server.port: 8082` only.
-- `pom.xml` — `web`, `actuator`, `test`. No Stripe SDK, no JPA, no Kafka, no Resilience4j.
-- `Dockerfile` — single stage, root user.
+*(Surveyed 2026-08-20 against the submodule HEAD.)*
 
-Absent: any controller, service, repository, Stripe client, webhook handler, `OutboxRelayConfig`, or Kafka producer.
+**Implemented (M1–M6 largely done):**
 
-Two environment issues to fix while working here:
+- Port **8082**; Flyway V1–V5 (transaction, outbox, webhook, review audit, outbox retry)
+- Controllers: `PaymentController`, `StripeWebhookController`, `TransactionReviewController`; `ApiExceptionHandler`
+- Services: `PaymentService`, Stripe charge/refund, `FraudEngineClient` (Resilience4j circuit breaker + internal token), webhook processing, review queue
+- Outbox: JPA `OutboxEntry` + polling `OutboxRelay` ([ADR-004](../adr/ADR-004-polling-outbox-relay.md)) with retry/backoff; Avro via Schema Registry
+- Auth: Keycloak JWT resource server; Stripe webhook signature-verified and public
+- Unit tests (`PaymentService`, `FraudEngineClient`, `OutboxEntry`); CI + multi-stage non-root Dockerfile
 
-- [`local-dev/.env.example`](../../local-dev/.env.example) sets `FRAUD_ENGINE_BASE_URL=http://localhost:8084`, which is **Notification Service**. Fraud Engine is on **8083**.
-- `FRAUD_ENGINE_TIMEOUT_MS=200` is already documented, matching ADR-003.
+**Remaining:**
+
+- Thin automated coverage — no Testcontainers outbox → Kafka or webhook integration tests
+- mTLS to fraud-engine not implemented in-app (infra)
+- Operational REVIEW SLA / expired-hold policy still a product decision
+- Refund reconciliation coordination with reconciliation-service still open
 
 ---
 
