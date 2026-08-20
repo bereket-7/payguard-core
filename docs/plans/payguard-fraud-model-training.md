@@ -1,10 +1,10 @@
 # Implementation Plan: payguard-fraud-model-training
 
 **Owner:** @bereket-7
-**Status:** Draft
-**Last updated:** 2026-07-29
+**Status:** In progress
+**Last updated:** 2026-08-20
 **Repo:** github.com/bereket-7/payguard-fraud-model-training
-**Depends on:** an approved labelled dataset (currently the blocker), S3 model registry from `payguard-infrastructure`
+**Depends on:** an approved labelled dataset (still the blocker for real promotion), S3 model registry from `payguard-infrastructure`
 
 ---
 
@@ -20,23 +20,21 @@ The most important thing this repo produces is not a model, it is a **contract**
 
 ## 2. Current state
 
-Structure exists, logic does not:
+*(Surveyed 2026-08-20 against the submodule HEAD.)*
 
-- [`src/features/feature_pipeline.py`](../../services/payguard-fraud-model-training/src/features/feature_pipeline.py) — one meaningful line: `FEATURE_COLUMNS = ("amount_minor", "merchant_velocity_1h", "device_risk_score")`. This tuple is the de facto serving contract and currently the most load-bearing line in the repo.
-- [`src/training/train_xgboost.py`](../../services/payguard-fraud-model-training/src/training/train_xgboost.py) — a `main()` that prints "Training scaffold ready. Configure an approved data source before training."
-- [`src/training/evaluate.py`](../../services/payguard-fraud-model-training/src/training/evaluate.py) — docstring only.
-- [`src/export/export_onnx.py`](../../services/payguard-fraud-model-training/src/export/export_onnx.py) — docstring only.
-- [`tests/test_features.py`](../../services/payguard-fraud-model-training/tests/test_features.py) — asserts `FEATURE_COLUMNS` is non-empty.
-- [`requirements.txt`](../../services/payguard-fraud-model-training/requirements.txt) — `pandas`, `scikit-learn`, `xgboost`, `skl2onnx`, `onnx`, all with range specifiers.
+**Implemented (M1–M5 largely coded; M6 partial):**
 
-Gaps and inconsistencies:
+- Pinned `requirements.txt` / `requirements-dev.txt`, `pyproject.toml`, CI (ruff, mypy, pytest)
+- Feature contract: `contracts/feature-contract-v1.json` + `src/features/`; umbrella gate `scripts/verify-ml-contract.sh`
+- Training / evaluate / export pipeline: `train_xgboost.py`, `evaluate.py`, `export_onnx.py` with unit tests (`test_features`, `test_export_onnx`)
+- `publish.py` copies ONNX + manifest to a **local** registry directory (`current.onnx`)
 
-- **Pinning contradicts the style guide.** `CONTRIBUTING.md` requires `==` pins "for reproducible training runs"; the file uses `>=`/`<` ranges. For a training pipeline, reproducibility is the whole point — a silent minor-version bump in XGBoost can change a model.
-- **`pytest` is undeclared** even though a test file exists.
-- **No CI workflow.**
-- **`notebooks/` does not exist**, though the architecture doc lists `notebooks/exploration.ipynb`.
-- **Only `src/__init__.py` exists**; subpackages rely on implicit namespace packages. It works, but adding `__init__.py` to each subpackage is more predictable.
-- **No data source.** The scaffold message is accurate — this is the real blocker, and it is a governance question, not an engineering one.
+**Remaining:**
+
+- No S3 model-registry publish / promotion workflow (infra has the bucket module; training does not call AWS)
+- Approved labelled production dataset still a governance blocker
+- ONNX JVM parity test in fraud-engine CI still optional follow-up
+- Feature pipeline remains thin relative to a full feature store
 
 ---
 
