@@ -8,18 +8,18 @@ Plans live in this umbrella repo — not inside the submodules — so a plan can
 
 ## Index
 
-| Plan | Repo | Language | Critical path |
-|---|---|---|---|
-| [**Gap remediation (platform)**](gap-remediation-plan.md) | `payguard-core` + all submodules | — | CI, tests, E2E, docs, K8s |
-| [payguard-event-schemas](payguard-event-schemas.md) | `payguard-event-schemas` | Avro | Blocks all producers/consumers |
-| [payguard-fraud-engine](payguard-fraud-engine.md) | `payguard-fraud-engine` | Java | Yes |
-| [payguard-payment-service](payguard-payment-service.md) | `payguard-payment-service` | Java | Yes |
-| [payguard-user-service](payguard-user-service.md) | `payguard-user-service` | Java | Yes (auth) |
-| [payguard-api-gateway](payguard-api-gateway.md) | `payguard-api-gateway` | Java | Yes (edge) |
-| [payguard-notification-service](payguard-notification-service.md) | `payguard-notification-service` | Java | No |
-| [payguard-reconciliation-service](payguard-reconciliation-service.md) | `payguard-reconciliation-service` | Java | No |
-| [payguard-fraud-model-training](payguard-fraud-model-training.md) | `payguard-fraud-model-training` | Python | No (offline) |
-| [payguard-infrastructure](payguard-infrastructure.md) | `payguard-infrastructure` | HCL / YAML | Deploy blocker |
+| Plan | Repo | Language | Status (2026-08-20) | Critical path |
+|---|---|---|---|---|
+| [**Gap remediation (platform)**](gap-remediation-plan.md) | `payguard-core` + all submodules | — | Mostly complete | CI, tests, E2E, docs, K8s |
+| [payguard-event-schemas](payguard-event-schemas.md) | `payguard-event-schemas` | Avro | Mostly complete | Blocks all producers/consumers |
+| [payguard-fraud-engine](payguard-fraud-engine.md) | `payguard-fraud-engine` | Java | Mostly complete | Yes |
+| [payguard-payment-service](payguard-payment-service.md) | `payguard-payment-service` | Java | Mostly complete | Yes |
+| [payguard-user-service](payguard-user-service.md) | `payguard-user-service` | Java | Mostly complete | Yes (auth) |
+| [payguard-api-gateway](payguard-api-gateway.md) | `payguard-api-gateway` | Java | Mostly complete | Yes (edge) |
+| [payguard-notification-service](payguard-notification-service.md) | `payguard-notification-service` | Java | Mostly complete | No |
+| [payguard-reconciliation-service](payguard-reconciliation-service.md) | `payguard-reconciliation-service` | Java | Mostly complete | No |
+| [payguard-fraud-model-training](payguard-fraud-model-training.md) | `payguard-fraud-model-training` | Python | In progress | No (offline) |
+| [payguard-infrastructure](payguard-infrastructure.md) | `payguard-infrastructure` | HCL / YAML | In progress | Deploy blocker |
 
 ---
 
@@ -61,7 +61,7 @@ Copy this into a new file named `payguard-<service>.md` and add a row to the ind
 # Implementation Plan: payguard-<service>
 
 **Owner:** @handle
-**Status:** Draft | In progress | Complete
+**Status:** Draft | In progress | Mostly complete | Complete
 **Last updated:** YYYY-MM-DD
 **Repo:** github.com/bereket-7/payguard-<service>
 **Depends on:** <repos or plans that must land first>
@@ -103,7 +103,7 @@ Copy this into a new file named `payguard-<service>.md` and add a row to the ind
 
 ## Cross-cutting gaps
 
-> **Active remediation plan:** [gap-remediation-plan.md](gap-remediation-plan.md) — step-by-step PRs for CI, tests, E2E, ML contract gates, docs sync, and K8s completeness. **Implemented 2026-08-11** — see plan §11 for remaining optional items (event-schemas GitHub Packages publish, Testcontainers integration tests).
+> **Active remediation plan:** [gap-remediation-plan.md](gap-remediation-plan.md) — step-by-step PRs for CI, tests, E2E, ML contract gates, docs sync, and K8s completeness. **Mostly complete** — per-service plan §2 sections refreshed **2026-08-20**. Remaining optional items: event-schemas GitHub Packages publish, Testcontainers outbox→Kafka, ONNX JVM parity.
 
 The items below were found during the July 2026 audit. **Most are now fixed.** Remaining optional work is tracked in the gap remediation plan.
 
