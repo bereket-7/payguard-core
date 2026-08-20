@@ -1,10 +1,10 @@
 # Implementation Plan: payguard-user-service
 
 **Owner:** @bereket-7
-**Status:** Draft
-**Last updated:** 2026-07-29
+**Status:** Mostly complete
+**Last updated:** 2026-08-20
 **Repo:** github.com/bereket-7/payguard-user-service
-**Depends on:** nothing at runtime — but every other service depends on the token format this one issues
+**Depends on:** Keycloak (local stack + [ADR-005](../adr/ADR-005-keycloak-hybrid-auth.md)); every other service depends on the claim contract Keycloak issues for merchants provisioned here
 
 ---
 
@@ -20,14 +20,23 @@ The critical output of this service is not an endpoint — it is a **token forma
 
 ## 2. Current state
 
-- [`UserServiceApplication.java`](../../services/payguard-user-service/src/main/java/com/payguard/user/UserServiceApplication.java) — bare `@SpringBootApplication`.
-- [`application.yml`](../../services/payguard-user-service/src/main/resources/application.yml) — app name and `server.port: 8081`.
-- `pom.xml` — `web`, `actuator`, `test` only. No Spring Security, no JPA, no JWT library.
-- `Dockerfile` — single stage, root user.
+*(Surveyed 2026-08-20 against the submodule HEAD.)*
 
-Nothing else exists: no entities, no controllers, no security configuration.
+**Implemented (original M1–M5 superseded by Keycloak hybrid auth):**
 
-**Port conflict:** 8081 is bound by Schema Registry in [`local-dev/docker-compose.yml`](../../local-dev/docker-compose.yml). Running this service locally alongside the stack fails to bind. This must be fixed in M1 — the natural resolution is moving this service to **8086**, since the Kafka tooling ports are effectively fixed by convention and other services' ports are already referenced in `.env.example` and the runbooks.
+- Port **8086** (Schema Registry collision on 8081 resolved)
+- Domain: `Merchant`, `AppUser` (with Keycloak subject link), `Role`; Flyway V1–V7 including `V6__keycloak_link` and `V7__drop_legacy_auth`
+- Controllers: `RegistrationController` (`POST /v1/merchants/register`), `MerchantController`, `UserController`, internal preferences API
+- `KeycloakAdminClient` provisions users; `ScopeService` derives scopes from roles
+- Auth: OAuth2 resource server validating Keycloak JWKS; `InternalServiceTokenFilter` for `/internal/**`
+- Legacy local JWT issuer / JWKS / refresh tokens / signing-key rotation **removed**
+- Tests for Keycloak admin client and scopes; CI + multi-stage non-root Dockerfile
+
+**Remaining:**
+
+- Service README may still mention HS256 — keep docs in sync with Keycloak
+- Limited controller/API tests; no Testcontainers
+- Claim-contract regression tests across gateway + payment still thin
 
 ---
 
